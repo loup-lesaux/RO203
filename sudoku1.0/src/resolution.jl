@@ -5,7 +5,6 @@ include("generation.jl")
 
 TOL = 0.00001
 
-
 """
 Solve a sudoku grid with CPLEX
 
