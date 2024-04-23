@@ -144,12 +144,27 @@ function solveDataSet()
                 println("In file resolution.jl, in method solveDataSet(), TODO: write the solution in fout") 
                 close(fout)
             end
-
-
             # Display the results obtained with the method on the current instance
             include(outputFile)
             println(resolutionMethod[methodId], " optimal: ", isOptimal)
             println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
         end         
     end 
+end
+
+
+
+include("io.jl")
+A,up,down,left,right=readInputFile("/RO203/Projet/RO203/data/instance_t5_1.txt")
+displayGrid(A,up,down,left,right)
+resolutionTime=-1
+isOptimal=false
+x, isOptimal, resolutionTime=cplexSolve(A,up,down,left,right)
+if isOptimal
+    #x=Array{Int64}(x)
+    displayGrid(A,up,down,left,right)
+    displaySolution(A,up,down,left,right)
+    fout = open("222.txt","w")
+    writeSolution(fout, x)
+    close(fout)
 end
