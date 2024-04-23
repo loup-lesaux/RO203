@@ -8,13 +8,52 @@ TOL = 0.00001
 """
 Solve an instance with CPLEX
 """
-function cplexSolve()
+function cplexSolve(up,down,left,right)
 
     # Create the model
     m = Model(with_optimizer(CPLEX.Optimizer))
 
-    # TODO
-    println("In file resolution.jl, in method cplexSolve(), TODO: fix input and output, define the model")
+    # Define the variable
+
+    @variable(m,x[1:n,1:n,1:n],Bin) # 1 si k se trouve en (i,j), 0 sinon
+	@variable(m,yu[1:n,1:n],Bin)	# 1 si (i,j) visible depuis up, 0 sinon
+	@variable(m,yd[1:n,1:n],Bin)	# 1 si (i,j) visible depuis down, 0 sinon
+	@variable(m,yl[1:n,1:n],Bin)	# 1 si (i,j) visible depuis left, 0 sinon
+	@variable(m,yr[1:n,1:n],Bin)	# 1 si (i,j) visible depuis right, 0 sinon
+
+    # Objectiv function
+
+    @objective(m,Max,x[1,1,1])
+
+    # Basis constraints
+
+    @constraint(m, [i in 1:n, j in 1:n], sum(x[i,j,k] for k in 1:n) == 1) # Une seule tour par case
+	@constraint(m, [i in 1:n, k in 1:n], sum(x[i,j,k] for j in 1:n) == 1) # Pas de doublons sur une colonne
+	@constraint(m, [j in 1:n, k in 1:n], sum(x[i,j,k] for i in 1:n) == 1) # Pas de doublons sur une ligne
+
+    # Constraints
+
+    #Up
+	@constraint(m, [j in 1:n], sum(yu[i,j] for i in 1:n)==up[j])
+	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yu[i,j]<=1-sum(x[l,j,h] for l in 1:i-1 for h in k:n)/n+1-x[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yu[i,j]>=1-sum(x[l,j,h] for l in 1:i-1 for h in k:n)-n*(1-x[i,j,k]))
+	
+	#Down
+	@constraint(m, [j in 1:n], sum(yd[i,j] for i in 1:n)==down[j])
+	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yd[i,j]<=1-sum(x[l,j,h] for l in i+1:n for h in k:n)/n+1-x[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yd[i,j]>=1-sum(x[l,j,h] for l in i+1:n for h in k:n)-n*(1-x[i,j,k]))
+	
+	#Est
+	@constraint(m, [i in 1:n], sum(yl[i,j] for j in 1:n)==left[i])
+	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yl[i,j]<=1-sum(x[i,l,h] for l in j+1:n for h in k:n)/n+1-x[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yl[i,j]>=1-sum(x[i,l,h] for l in j+1:n for h in k:n)-n*(1-x[i,j,k]))
+	
+	
+	#Ouest
+	@constraint(m, [i in 1:n], sum(yr[i,j] for j in 1:n)==right[i])
+	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yr[i,j]<=1-sum(x[i,l,h] for l in 1:j-1 for h in k:n)/n+1-x[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yr[i,j]>=1-sum(x[i,l,h] for l in 1:j-1 for h in k:n)-n*(1-x[i,j,k]))
+	
 
     # Start a chronometer
     start = time()
@@ -29,15 +68,6 @@ function cplexSolve()
     
 end
 
-"""
-Heuristically solve an instance
-"""
-function heuristicSolve()
-
-    # TODO
-    println("In file resolution.jl, in method heuristicSolve(), TODO: fix input and output, define the model")
-    
-end 
 
 """
 Solve all the instances contained in "../data" through CPLEX and heuristics
@@ -48,8 +78,8 @@ Remark: If an instance has previously been solved (either by cplex or the heuris
 """
 function solveDataSet()
 
-    dataFolder = "../data/"
-    resFolder = "../res/"
+    dataFolder = "/data/"
+    resFolder = "/res/"
 
     # Array which contains the name of the resolution methods
     resolutionMethod = ["cplex"]
@@ -94,11 +124,9 @@ function solveDataSet()
                 # If the method is cplex
                 if resolutionMethod[methodId] == "cplex"
                     
-                    # TODO 
-                    println("In file resolution.jl, in method solveDataSet(), TODO: fix cplexSolve() arguments and returned values")
                     
                     # Solve it and get the results
-                    isOptimal, resolutionTime = cplexSolve()
+                    isOptimal, resolutionTime = cplexSolve(up,down,left,right)
                     
                     # If a solution is found, write it
                     if isOptimal
