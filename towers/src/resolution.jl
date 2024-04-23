@@ -23,7 +23,7 @@ function cplexSolve(up,down,left,right)
 
     # Objectiv function
 
-    @objective(m,Max,x[1,1,1])
+    @objective(m,Max,sum(x[1, 1, k] for k in 1:n))
 
     # Basis constraints
 
@@ -187,11 +187,11 @@ A,up,down,left,right=readInputFile("/RO203/Projet/RO203/data/instance_t5_1.txt")
 displayGrid(A,up,down,left,right)
 resolutionTime=-1
 isOptimal=false
-x, isOptimal, resolutionTime=cplexSolve(A,up,down,left,right)
+x, isOptimal, resolutionTime=cplexSolve(up,down,left,right)
 if isOptimal
     #x=Array{Int64}(x)
-    displayGrid(A,up,down,left,right)
-    displaySolution(A,up,down,left,right)
+    displayGrid(up,down,left,right)
+    displaySolution(up,down,left,right)
     fout = open("222.txt","w")
     writeSolution(fout, x)
     close(fout)
