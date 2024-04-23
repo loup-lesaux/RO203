@@ -2,7 +2,7 @@
 
 using JuMP
 using Plots
-import GR
+import .GR
 
 """
 Read an instance from an input file

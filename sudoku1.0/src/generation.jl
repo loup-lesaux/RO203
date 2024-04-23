@@ -77,7 +77,6 @@ function generateInstance(n::Int64, density::Float64)
                     v = rem(v, n) + 1
                 end 
             end
-
             if testedCells == n*n
                 isGridValid = false
             else 
@@ -91,7 +90,6 @@ function generateInstance(n::Int64, density::Float64)
     return t
     
 end 
-
 
 """
 Test if cell (l, c) can be assigned value v
@@ -185,5 +183,5 @@ function generateDataSet()
     end
 end
 
-
+generateDataSet()
 
