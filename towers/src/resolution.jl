@@ -13,6 +13,10 @@ function cplexSolve(up,down,left,right)
     n=size(up,1)
     # Create the model
     m = Model(CPLEX.Optimizer)
+<<<<<<< HEAD
+
+=======
+>>>>>>> 53118fa0daede1b873df95976a75f7272a546239
     # Define the variable
     @variable(m,x[1:n,1:n,1:n],Bin) # 1 si k se trouve en (i,j), 0 sinon
 	@variable(m,yu[1:n,1:n],Bin)	# 1 si (i,j) visible depuis up, 0 sinon
@@ -63,8 +67,14 @@ Remark: If an instance has previously been solved (either by cplex or the heuris
 """
 function solveDataSet()
     cwd=pwd()
+<<<<<<< HEAD
+
+    dataFolder = "../data/"
+    resFolder = "../res/"
+=======
     dataFolder = cwd*"/Projet/RO203/towers/data/"
     resFolder = cwd*"/Projet/RO203/towers/res/"
+>>>>>>> 53118fa0daede1b873df95976a75f7272a546239
 
     # Array which contains the name of the resolution methods
     resolutionMethod = ["cplex"]
@@ -83,9 +93,10 @@ function solveDataSet()
     global isOptimal = false
     global solveTime = -1
 
+
     # For each instance
     # (for each file in folder dataFolder which ends by ".txt")
-    for file in filter(x->occursin(".txt", x), readdir(dataFolder))
+    for file in filter(x->occursin(".txt", x), readdir(dataFolder)) 
         println("-- Resolution of ", file)
         up,down,left,right= readInputFile(dataFolder * file)
 
@@ -159,6 +170,8 @@ function solveDataSet()
         end         
     end 
 end
+<<<<<<< HEAD
+=======
 
 solveDataSet()
 
@@ -178,3 +191,4 @@ solveDataSet()
 #     writeSolution(fout, x)
 #     close(fout)
 # end
+>>>>>>> 53118fa0daede1b873df95976a75f7272a546239
