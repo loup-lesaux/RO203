@@ -43,13 +43,13 @@ function cplexSolve(up,down,left,right)
 	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yd[i,j]<=1-sum(x[l,j,h] for l in i+1:n for h in k:n)/n+1-x[i,j,k])
 	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yd[i,j]>=1-sum(x[l,j,h] for l in i+1:n for h in k:n)-n*(1-x[i,j,k]))
 	
-	#Est
+	#Left
 	@constraint(m, [i in 1:n], sum(yl[i,j] for j in 1:n)==left[i])
 	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yl[i,j]<=1-sum(x[i,l,h] for l in j+1:n for h in k:n)/n+1-x[i,j,k])
 	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yl[i,j]>=1-sum(x[i,l,h] for l in j+1:n for h in k:n)-n*(1-x[i,j,k]))
 	
 	
-	#Ouest
+	#Right
 	@constraint(m, [i in 1:n], sum(yr[i,j] for j in 1:n)==right[i])
 	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yr[i,j]<=1-sum(x[i,l,h] for l in 1:j-1 for h in k:n)/n+1-x[i,j,k])
 	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yr[i,j]>=1-sum(x[i,l,h] for l in 1:j-1 for h in k:n)-n*(1-x[i,j,k]))
@@ -187,7 +187,7 @@ A,up,down,left,right=readInputFile("/RO203/Projet/RO203/data/instance_t5_1.txt")
 displayGrid(A,up,down,left,right)
 resolutionTime=-1
 isOptimal=false
-x, isOptimal, resolutionTime=cplexSolve(A,up,down,left,right)
+x, isOptimal, resolutionTime=cplexSolve(up,down,left,right)
 if isOptimal
     #x=Array{Int64}(x)
     displayGrid(A,up,down,left,right)
