@@ -15,11 +15,10 @@ function readInputFile(inputFile::String)
     close(datafile)
 
     n=length(split(data[1],","))
-	up=Array{Int64}(n-2)
-	down=Array{Int64}(n-2)
-	left=Array{Int64}(n-2)
-	right=Array{Int64}(n-2)
-    A=Matrix{Int64}(n-2,n-2)
+	up=Vector{Int64}(zeros(n))
+    down=Vector{Int64}(zeros(n))
+    left=Vector{Int64}(zeros(n))
+    right=Vector{Int64}(zeros(n))
     
     for line in 1:n
         lineSplit = split(data[line],",")
@@ -33,13 +32,10 @@ function readInputFile(inputFile::String)
             end
         else
             left[line-1] = parse(Int64,lineSplit[1])
-            for col in 2:n-1
-                A[line-1,col-1] = parse(Int64,lineSplit[col])
-            end
             right[line-1] = parse(Int64,lineSplit[n])
         end
     end
-	return A, up, down, left, right
+	return up, down, left, right
 end
 
 """
