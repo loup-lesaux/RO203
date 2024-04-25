@@ -180,7 +180,7 @@ function solveDataSet()
     end 
 end
 
-
+#Test 
 
 include("io.jl")
 A,up,down,left,right=readInputFile("/RO203/Projet/RO203/data/instance_t5_1.txt")
