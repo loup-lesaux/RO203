@@ -23,7 +23,7 @@ function cplexSolve(up,down,left,right)
 
     # Objectiv function
 
-    @objective(m,Max,x[1,1,1])
+    @objective(m,Max,sum(x[1, 1, k] for k in 1:n))
 
     # Basis constraints
 
@@ -77,9 +77,10 @@ The results are written in "../res/cplex" and "../res/heuristic"
 Remark: If an instance has previously been solved (either by cplex or the heuristic) it will not be solved again
 """
 function solveDataSet()
+    cwd=pwd()
 
-    dataFolder = "/data/"
-    resFolder = "/res/"
+    dataFolder = cwd*"RO203/towers/data/"
+    resFolder = cwd*"RO203/towers/res/"
 
     # Array which contains the name of the resolution methods
     resolutionMethod = ["cplex"]
@@ -100,14 +101,10 @@ function solveDataSet()
 
     # For each instance
     # (for each file in folder dataFolder which ends by ".txt")
-    for file in filter(x->occursin(".txt", x), readdir(dataFolder))  
-        
+    for file in filter(x->occursin(".txt", x), readdir(dataFolder))
         println("-- Resolution of ", file)
-        readInputFile(dataFolder * file)
+        up,down,left,right= readInputFile(dataFolder * file)
 
-        # TODO
-        println("In file resolution.jl, in method solveDataSet(), TODO: read value returned by readInputFile()")
-        
         # For each resolution method
         for methodId in 1:size(resolutionMethod, 1)
             
@@ -123,15 +120,14 @@ function solveDataSet()
                 
                 # If the method is cplex
                 if resolutionMethod[methodId] == "cplex"
-                    
+                    println("resolutionMethod[methodId] == cplex")                  
                     
                     # Solve it and get the results
                     isOptimal, resolutionTime = cplexSolve(up,down,left,right)
                     
                     # If a solution is found, write it
                     if isOptimal
-                        # TODO
-                        println("In file resolution.jl, in method solveDataSet(), TODO: write cplex solution in fout") 
+                        writeSolution(fout,x)
                     end
 
                 # If the method is one of the heuristics
@@ -180,18 +176,18 @@ function solveDataSet()
     end 
 end
 
-
+#Test 
 
 include("io.jl")
-A,up,down,left,right=readInputFile("/RO203/Projet/RO203/data/instance_t5_1.txt")
+A,up,down,left,right=readInputFile("/RO203prout/Projet/RO203/data/instance_t5_1.txt")
 displayGrid(A,up,down,left,right)
 resolutionTime=-1
 isOptimal=false
 x, isOptimal, resolutionTime=cplexSolve(up,down,left,right)
 if isOptimal
     #x=Array{Int64}(x)
-    displayGrid(A,up,down,left,right)
-    displaySolution(A,up,down,left,right)
+    displayGrid(up,down,left,right)
+    displaySolution(up,down,left,right)
     fout = open("222.txt","w")
     writeSolution(fout, x)
     close(fout)
