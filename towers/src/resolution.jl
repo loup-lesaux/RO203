@@ -10,7 +10,7 @@ TOL = 0.00001
 Solve an instance with CPLEX
 """
 function cplexSolve(up,down,left,right)
-    n=size(up)
+    n=size(up,1)
     # Create the model
     m = Model(CPLEX.Optimizer)
     # Define the variable
@@ -20,7 +20,8 @@ function cplexSolve(up,down,left,right)
 	@variable(m,yl[1:n,1:n],Bin)	# 1 si (i,j) visible depuis left, 0 sinon
 	@variable(m,yr[1:n,1:n],Bin)	# 1 si (i,j) visible depuis right, 0 sinon
     # Objective function
-    @objective(m,Max,sum(x[1, 1, k] for k in 1:n))
+    @objective(m,Max,1)
+    #@objective(m,Max,sum(x[1, 1, k] for k in 1:n))
     # Basis constraints
     @constraint(m, [i in 1:n, j in 1:n], sum(x[i,j,k] for k in 1:n) == 1) # Une seule tour par case
 	@constraint(m, [i in 1:n, k in 1:n], sum(x[i,j,k] for j in 1:n) == 1) # Pas de doublons sur une colonne
@@ -49,7 +50,7 @@ function cplexSolve(up,down,left,right)
     # Return:
     # 1 - true if an optimum is found
     # 2 - the resolution time
-    return JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
+    return JuMP.primal_status(m) == JuMP.MOI.FEASIBLE_POINT, time() - start
 end
 
 

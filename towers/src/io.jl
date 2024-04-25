@@ -15,10 +15,10 @@ function readInputFile(inputFile::String)
     close(datafile)
 
     n=length(split(data[1],","))
-	up=Vector{Int64}(zeros(n))
-    down=Vector{Int64}(zeros(n))
-    left=Vector{Int64}(zeros(n))
-    right=Vector{Int64}(zeros(n))
+	up=Vector{Int64}(zeros(n-2))
+    down=Vector{Int64}(zeros(n-2))
+    left=Vector{Int64}(zeros(n-2))
+    right=Vector{Int64}(zeros(n-2))
     
     for line in 1:n
         lineSplit = split(data[line],",")
