@@ -15,11 +15,10 @@ function readInputFile(inputFile::String)
     close(datafile)
 
     n=length(split(data[1],","))
-	up=Array{Int64}(n-2)
-	down=Array{Int64}(n-2)
-	left=Array{Int64}(n-2)
-	right=Array{Int64}(n-2)
-    A=Matrix{Int64}(n-2,n-2)
+	up=Vector{Int64}(zeros(n))
+    down=Vector{Int64}(zeros(n))
+    left=Vector{Int64}(zeros(n))
+    right=Vector{Int64}(zeros(n))
     
     for line in 1:n
         lineSplit = split(data[line],",")
@@ -33,39 +32,36 @@ function readInputFile(inputFile::String)
             end
         else
             left[line-1] = parse(Int64,lineSplit[1])
-            for col in 2:n-1
-                A[line-1,col-1] = parse(Int64,lineSplit[col])
-            end
             right[line-1] = parse(Int64,lineSplit[n])
         end
     end
-	return A, up, down, left, right
+	return up, down, left, right
 end
 
 """
-Display an initial game represented by a 2-dimensional array and four visibility vectors.
+Display an initial game represented by a matrix and four visibility vectors.
 
 Arguments:
     - t: array of size n*n with values in [| 0, n |] (0 if the cell is empty)
-    - vL: vector of visibility left
-    - vR: vector of visibility right
-    - vU: vector of visbility upper
-    - vD: vector of visibility down
+    - left: vector of visibility left
+    - right: vector of visibility right
+    - up: vector of visbility upper
+    - down: vector of visibility down
 """
-function displayGrid(t::Array{Int, 2}, vL::Array{Int, 1}, vR::Array{Int, 1}, vU::Array{Int, 1}, vD::Array{Int, 1})
+function displayGrid(t::Matrix{Int64}, left::Array{Int64, 1}, right::Array{Int64, 1}, up::Array{Int64, 1}, down::Array{Int, 1})
     n = size(t, 1)
     blockSize = round.(Int, sqrt(n))
     print("    ")
 
     ## Display the upper visbility vector.
     for i in 1:n
-        if vU[i] == 0
+        if up[i] == 0
             print(" -")
         else
-            if vU[i] < 10
+            if up[i] < 10
                 print(" ")
             end
-            print(vU[i])
+            print(up[i])
         end
         print(" ")
     end
@@ -74,13 +70,13 @@ function displayGrid(t::Array{Int, 2}, vL::Array{Int, 1}, vR::Array{Int, 1}, vU:
     ## For each cell (l, c)
     for l in 1:n
         ## Display the left visbility vector.
-        if vL[l] == 0
+        if left[l] == 0
             print(" -")
         else
-            if vL[l] < 10
+            if left[l] < 10
                 print(" ")
             end
-            print(vL[l])
+            print(left[l])
         end
         print(" |")
         ## Display the grid t.
@@ -97,27 +93,27 @@ function displayGrid(t::Array{Int, 2}, vL::Array{Int, 1}, vR::Array{Int, 1}, vU:
         end
         print(" |")
         ## Display the right visbility vector.
-        if vR[l] == 0
+        if right[l] == 0
             println(" -")
         else
-            if vR[l] < 10
+            if right[l] < 10
                 print(" ")
             end
-            println(vR[l])
+            println(right[l])
         end
     end
     ## Display the bottom border of the grid.
     print("    ", "-"^(3*n+blockSize-1),"\n    ")
     ## Display the down visbility vector.
     for i in 1:n
-        if vD[i] == 0
+        if down[i] == 0
             print(" -")
         else
-            if vD[i] < 10
+            if down[i] < 10
                 print(" ")
             end
             
-            print(vD[i])
+            print(down[i])
         end
         print(" ")
     end
@@ -125,28 +121,28 @@ function displayGrid(t::Array{Int, 2}, vL::Array{Int, 1}, vR::Array{Int, 1}, vU:
 end
 
 """
-Display an solution of game represented by a 2-dimensional array and four visibility vectors.
+Display an solution of game represented by a matrix and four visibility vectors.
 
 Arguments:
     - xk: array of size n*n*n (xk[i, j, k] = 1 if cell (i, j) has value k)
-    - vL: vector of visibility left
-    - vR: vector of visibility right
-    - vU: vector of visbility upper
-    - vD: vector of visibility down
+    - left: vector of visibility left
+    - right: vector of visibility right
+    - up: vector of visbility upper
+    - down: vector of visibility down
 """
-function displaySolution(xk::Array{VariableRef, 3}, vL::Array{Int, 1}, vR::Array{Int, 1}, vU::Array{Int, 1}, vD::Array{Int, 1})
+function displaySolution(xk::Array{VariableRef, 3}, left::Array{Int64, 1}, right::Array{Int64, 1}, up::Array{Int64, 1}, down::Array{Int64, 1})
     n = size(xk, 1)
     blockSize = round.(Int, sqrt(n))
     ## Display the upper visbility vector.
     print("    ")
     for i in 1:n
-        if vU[i] == 0
+        if up[i] == 0
             print(" -")
         else
-            if vU[i] < 10
+            if up[i] < 10
                 print(" ")
             end
-            print(vU[i])
+            print(up[i])
         end
         print(" ")
     end
@@ -158,13 +154,13 @@ function displaySolution(xk::Array{VariableRef, 3}, vL::Array{Int, 1}, vR::Array
     for l in 1:n
 
         ## Display the left visbility vector.
-        if vL[l] == 0
+        if left[l] == 0
             print(" -")
         else
-            if vL[l] < 10
+            if left[l] < 10
                 print(" ")
             end
-            print(vL[l])
+            print(left[l])
         end
         print(" |")
 
@@ -183,13 +179,13 @@ function displaySolution(xk::Array{VariableRef, 3}, vL::Array{Int, 1}, vR::Array
         print(" |")
 
         ## Display the right visbility vector.
-        if vR[l] == 0
+        if right[l] == 0
             println(" -")
         else
-            if vR[l] < 10
+            if right[l] < 10
                 print(" ")
             end
-            println(vR[l])
+            println(right[l])
         end
     end
 
@@ -198,13 +194,13 @@ function displaySolution(xk::Array{VariableRef, 3}, vL::Array{Int, 1}, vR::Array
 
     ## Display the down visbility vector.
     for i in 1:n
-        if vD[i] == 0
+        if down[i] == 0
             print(" -")
         else
-            if vD[i] < 10
+            if down[i] < 10
                 print(" ")
             end
-            print(vD[i])
+            print(down[i])
         end
         print(" ")
     end
