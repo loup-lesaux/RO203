@@ -11,7 +11,7 @@ Solve an instance with CPLEX
 function cplexSolve(up,down,left,right)
 
     # Create the model
-    m = Model(with_optimizer(CPLEX.Optimizer))
+    m = Model(CPLEX.Optimizer)
 
     # Define the variable
 
@@ -79,8 +79,8 @@ Remark: If an instance has previously been solved (either by cplex or the heuris
 function solveDataSet()
     cwd=pwd()
 
-    dataFolder = cwd*"RO203/towers/data/"
-    resFolder = cwd*"RO203/towers/res/"
+    dataFolder = "../data/"
+    resFolder = "../res/"
 
     # Array which contains the name of the resolution methods
     resolutionMethod = ["cplex"]
@@ -99,9 +99,10 @@ function solveDataSet()
     global isOptimal = false
     global solveTime = -1
 
+
     # For each instance
     # (for each file in folder dataFolder which ends by ".txt")
-    for file in filter(x->occursin(".txt", x), readdir(dataFolder))
+    for file in filter(x->occursin(".txt", x), readdir(dataFolder)) 
         println("-- Resolution of ", file)
         up,down,left,right= readInputFile(dataFolder * file)
 
@@ -174,21 +175,4 @@ function solveDataSet()
             println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
         end         
     end 
-end
-
-#Test 
-
-include("io.jl")
-A,up,down,left,right=readInputFile("/RO203prout/Projet/RO203/data/instance_t5_1.txt")
-displayGrid(A,up,down,left,right)
-resolutionTime=-1
-isOptimal=false
-x, isOptimal, resolutionTime=cplexSolve(up,down,left,right)
-if isOptimal
-    #x=Array{Int64}(x)
-    displayGrid(up,down,left,right)
-    displaySolution(up,down,left,right)
-    fout = open("222.txt","w")
-    writeSolution(fout, x)
-    close(fout)
 end
