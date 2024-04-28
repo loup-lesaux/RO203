@@ -327,6 +327,6 @@ right=[1,3,2,2,3 ]
 
 x,a,b=cplexSolve([2,1],[1,2],[2,1],[1,2])
 cwd=pwd()
-outputFile=cwd*"/Projet/RO203/towers/res/test.txt"
+outputFile=cwd*"/RO203/towers/res/test.txt"
 fout = open(outputFile, "w") 
 writeSolution(fout,x)
