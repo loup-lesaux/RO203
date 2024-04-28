@@ -132,7 +132,7 @@ function generateDataSet()
     for size in [5,6,7,8]
 		# Generate 10 instances
 		for i in 1:10
-			fileName = cwd*"/Projet/RO203/towers/data/instance_t"*string(size)*"_"*string(i)*".txt"
+			fileName = cwd*"/RO203/towers/data/instance_t"*string(size)*"_"*string(i)*".txt"
 			if !isfile(fileName)
 				println("-- Generating file "*fileName)
 				up,down,left,right = generateVectors(generateGrid(size))

@@ -98,9 +98,8 @@ Remark: If an instance has previously been solved (either by cplex or the heuris
 """
 function solveDataSet()
     cwd=pwd()
-
-    dataFolder = cwd*"/Projet/RO203/towers/data/"
-    resFolder = cwd*"/Projet/RO203/towers/res/"
+    dataFolder = cwd*"/RO203/towers/data/"
+    resFolder = cwd*"/RO203/towers/res/"
 
     # Array which contains the name of the resolution methods
     resolutionMethod = ["cplex"]
@@ -194,10 +193,19 @@ end
 
 solveDataSet()
 
-#Test 
+########################################################################################################################
+#####Tests 
+########################################################################################################################
 
+# cwd=pwd()
+# up,down,left,right=readInputFile(cwd*"/RO203/towers/data/instance_t5_1.txt")
+# println(up)
+# up=[2, 2, 2, 3, 1]
+# down=[3,2,1,2,3]
+# left=[3,2,1,2,3]
+# right=[1,3,2,2,3 ]
 
-# up,down,left,right=readInputFile("/RO203prout/Projet/RO203/data/instance_t5_1.txt")
+# up,down,left,right=readInputFile("/Projet/RO203/data/instance_t5_1.txt")
 # displayGrid(A,up,down,left,right)
 # resolutionTime=-1
 # isOptimal=false
