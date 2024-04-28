@@ -9,16 +9,12 @@ TOL = 0.00001
 """
 Solve an instance with CPLEX
 """
-function cplexSolve(up,down,left,right)
-    n=size(up)
+function cplexSolve(up::Vector{Int64},down::Vector{Int64},left::Vector{Int64},right::Vector{Int64})
+    n=size(up,1)
     # Create the model
     m = Model(CPLEX.Optimizer)
-<<<<<<< HEAD
-
-=======
->>>>>>> 53118fa0daede1b873df95976a75f7272a546239
     # Define the variable
-    @variable(m,x[1:n,1:n,1:n],Bin) # 1 si k se trouve en (i,j), 0 sinon
+    @variable(m,x[1:n, 1:n, 1:n],Bin) # 1 si k se trouve en (i,j), 0 sinon
 	@variable(m,yu[1:n,1:n],Bin)	# 1 si (i,j) visible depuis up, 0 sinon
 	@variable(m,yd[1:n,1:n],Bin)	# 1 si (i,j) visible depuis down, 0 sinon
 	@variable(m,yl[1:n,1:n],Bin)	# 1 si (i,j) visible depuis left, 0 sinon
@@ -34,6 +30,7 @@ function cplexSolve(up,down,left,right)
 	@constraint(m, [j in 1:n], sum(yu[i,j] for i in 1:n)==up[j])
 	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yu[i,j]<=1-sum(x[l,j,h] for l in 1:i-1 for h in k:n)/n+1-x[i,j,k])
 	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yu[i,j]>=1-sum(x[l,j,h] for l in 1:i-1 for h in k:n)-n*(1-x[i,j,k]))
+
 	#Down
 	@constraint(m, [j in 1:n], sum(yd[i,j] for i in 1:n)==down[j])
 	@constraint(m, [i in 1:n, j in 1:n, k in 1:n], yd[i,j]<=1-sum(x[l,j,h] for l in i+1:n for h in k:n)/n+1-x[i,j,k])
@@ -53,7 +50,7 @@ function cplexSolve(up,down,left,right)
     # Return:
     # 1 - true if an optimum is found
     # 2 - the resolution time
-    return JuMP.primal_status(m) == JuMP.MathOptInterface.FEASIBLE_POINT, time() - start
+    return JuMP.primal_status(m) == JuMP.MOI.FEASIBLE_POINT, time() - start
 end
 
 
@@ -66,14 +63,8 @@ Remark: If an instance has previously been solved (either by cplex or the heuris
 """
 function solveDataSet()
     cwd=pwd()
-<<<<<<< HEAD
-
-    dataFolder = "../data/"
-    resFolder = "../res/"
-=======
-    dataFolder = cwd*"/Projet/RO203/towers/data/"
-    resFolder = cwd*"/Projet/RO203/towers/res/"
->>>>>>> 53118fa0daede1b873df95976a75f7272a546239
+    dataFolder = cwd*"/RO203/towers/data/"
+    resFolder = cwd*"/RO203/towers/res/"
 
     # Array which contains the name of the resolution methods
     resolutionMethod = ["cplex"]
@@ -121,6 +112,7 @@ function solveDataSet()
                     
                     # If a solution is found, write it
                     if isOptimal
+                        println("is optimal")                  
                         writeSolution(fout,x)
                     end
 
@@ -157,9 +149,6 @@ function solveDataSet()
 
                 println(fout, "solveTime = ", resolutionTime) 
                 println(fout, "isOptimal = ", isOptimal)
-                
-                # TODO
-                println("In file resolution.jl, in method solveDataSet(), TODO: write the solution in fout") 
                 close(fout)
             end
             # Display the results obtained with the method on the current instance
@@ -169,25 +158,23 @@ function solveDataSet()
         end         
     end 
 end
-<<<<<<< HEAD
-=======
 
-solveDataSet()
+#solveDataSet()
 
 #Test 
 
+cwd=pwd()
+up,down,left,right=readInputFile(cwd*"/RO203/towers/data/instance_t5_1.txt")
+println(up)
+up=[2, 2, 2, 3, 1]
+down=[3,2,1,2,3]
+left=[3,2,1,2,3]
+right=[1,3,2,2,3 ]
 
-# A,up,down,left,right=readInputFile("/RO203prout/Projet/RO203/data/instance_t5_1.txt")
-# displayGrid(A,up,down,left,right)
-# resolutionTime=-1
-# isOptimal=false
-# x, isOptimal, resolutionTime=cplexSolve(up,down,left,right)
-# if isOptimal
-#     #x=Array{Int64}(x)
-#     displayGrid(up,down,left,right)
-#     displaySolution(up,down,left,right)
-#     fout = open("222.txt","w")
-#     writeSolution(fout, x)
-#     close(fout)
-# end
->>>>>>> 53118fa0daede1b873df95976a75f7272a546239
+resolutionTime=-1
+isOptimal=false
+x, isOptimal, resolutionTime=cplexSolve(up,down,left,right)
+println(x)
+println(isOptimal)
+displayGrid(x,up,down,left,right)
+displaySolution(x,up,down,left,right)
