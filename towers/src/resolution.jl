@@ -13,10 +13,7 @@ function cplexSolve(up,down,left,right)
     n=size(up,1)
     # Create the model
     m = Model(CPLEX.Optimizer)
-<<<<<<< HEAD
 
-=======
->>>>>>> 53118fa0daede1b873df95976a75f7272a546239
     # Define the variable
     @variable(m,x[1:n,1:n,1:n],Bin) # 1 si k se trouve en (i,j), 0 sinon
 	@variable(m,yu[1:n,1:n],Bin)	# 1 si (i,j) visible depuis up, 0 sinon
