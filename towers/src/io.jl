@@ -15,10 +15,10 @@ function readInputFile(inputFile::String)
     close(datafile)
 
     n=length(split(data[1],","))
-	up=Vector{Int64}(zeros(n))
-    down=Vector{Int64}(zeros(n))
-    left=Vector{Int64}(zeros(n))
-    right=Vector{Int64}(zeros(n))
+	up=Vector{Int64}(zeros(n-2))
+    down=Vector{Int64}(zeros(n-2))
+    left=Vector{Int64}(zeros(n-2))
+    right=Vector{Int64}(zeros(n-2))
     
     for line in 1:n
         lineSplit = split(data[line],",")
@@ -436,3 +436,58 @@ function resultsArray(outputFile::String)
     println(fout, "\\end{document}")
     close(fout)  
 end
+
+function writeSolution(fout::IOStream, x::Array{VariableRef,3})
+
+    # Convert the solution from x[i, j, k] variables into t[i, j] variables
+    n = size(x, 1)
+    t = Matrix{Int64}(undef, n, n)
+    
+    for l in 1:n
+        for c in 1:n
+            for k in 1:n
+                if JuMP.value(x[l, c, k]) > TOL
+                    t[l, c] = k
+                end
+            end
+        end 
+    end
+
+    # Write the solution
+    writeSolution(fout, t)
+
+end
+
+
+
+"""
+Write a solution in an output stream
+
+Arguments
+- fout: the output stream (usually an output file)
+- t: 2-dimensional array of size n*n
+"""
+function writeSolution(fout::IOStream, t::Matrix{Int64})
+    
+    println(fout, "t = [")
+    n = size(t, 1)
+    
+    for l in 1:n
+
+        print(fout, "[ ")
+        
+        for c in 1:n
+            print(fout, string(t[l, c]) * " ")
+        end 
+
+        endLine = "]"
+
+        if l != n
+            endLine *= ";"
+        end
+
+        println(fout, endLine)
+    end
+
+    println(fout, "]")
+end 
