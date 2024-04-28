@@ -437,8 +437,7 @@ function resultsArray(outputFile::String)
     close(fout)  
 end
 
-function writeSolution(fout::IOStream, x::Array{VariableRef,3})
-
+function writeSolution(fout::IOStream, x::Array{VariableRef,3}, up, down, left, right)
     # Convert the solution from x[i, j, k] variables into t[i, j] variables
     n = size(x, 1)
     t = Matrix{Int64}(undef, n, n)
@@ -454,7 +453,7 @@ function writeSolution(fout::IOStream, x::Array{VariableRef,3})
     end
 
     # Write the solution
-    writeSolution(fout, t)
+    writeSolution(fout, t, up, down, left, right)
 
 end
 
@@ -467,27 +466,71 @@ Arguments
 - fout: the output stream (usually an output file)
 - t: 2-dimensional array of size n*n
 """
-function writeSolution(fout::IOStream, t::Matrix{Int64})
-    
-    println(fout, "t = [")
-    n = size(t, 1)
-    
-    for l in 1:n
-
-        print(fout, "[ ")
-        
-        for c in 1:n
-            print(fout, string(t[l, c]) * " ")
-        end 
-
-        endLine = "]"
-
-        if l != n
-            endLine *= ";"
+function writeSolution(fout::IOStream, xk::Matrix{Int64}, up, down, left, right)
+    n = size(xk, 1)
+    blockSize = round.(Int, sqrt(n))
+    ## Display the upper visbility vector.
+    print(fout,"    ")
+    for i in 1:n
+        if up[i] == 0
+            print(fout," -")
+        else
+            if up[i] < 10
+                print(fout," ")
+            end
+            print(fout,up[i])
         end
+        print(fout,"")
+    end
+    ## Display the upper border of the grid.
+    print(fout,"\n   ", "-"^(2*n+blockSize-1)) 
+    println(fout)
+    
+    ## For each cell (l, c)
+    for l in 1:n
+        ## Display the left visbility vector.
+        if left[l] == 0
+            print(fout," -")
+        else
+            if left[l] < 10
+                print(fout," ")
+            end
+            print(fout,left[l])
+        end
+        print(fout," | ")
 
-        println(fout, endLine)
+        ## Display the solution x.
+        for c in 1:n
+            print(fout,xk[l,c])
+            print(fout," ")
+        end
+        print(fout," |")
+
+        ## Display the right visbility vector.
+        if right[l] == 0
+            println(fout," -")
+        else
+            if right[l] < 10
+                print(fout," ")
+            end
+            println(fout,right[l])
+        end
     end
 
-    println(fout, "]")
+    ## Display the bottom border of the grid.
+    print(fout,"   ", "-"^(2*n+blockSize-1),"\n    ")
+
+    ## Display the down visbility vector.
+    for i in 1:n
+        if down[i] == 0
+            print(fout," -")
+        else
+            if down[i] < 10
+                print(fout," ")
+            end
+            print(fout,down[i])
+        end
+        print(fout,"")
+    end
+    println(fout)
 end 
