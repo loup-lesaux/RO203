@@ -196,6 +196,198 @@ function cplexSolve(G::Matrix{Int})
 
 end
 
+
+######################### Fonction List_of_possible_move ############################
+
+# Prend en entrée une grille et renvoit la liste des mouvements possibleValues
+#sous la forme [i,j,d] avec (i,j) la case 
+# où le pion va arriver et d la direction ("Nord", "Sud", "Ouest", "Est")
+
+#####################################################################################
+
+
+function List_of_possible_move(G::Matrix{Int})
+
+    #Initialisation : taille de G (matrice carrée)
+
+    leng=size(G,1)
+    L=[]
+
+    #Idée : on parcourt toute les cases de la grille et on identifie lorsqu'il y a une case vide
+    #Les cases adjacentes à celles-ci (lorsque deux cases avec un pion sont adjacentes à celle-ci, un mouvement est possible)
+
+    for i in 1:leng
+        for j in 1:leng
+
+            if G[i, j] == 0 #Case vide
+                if i >= 3 && G[i-1, j] == 1 && G[i-2, j] == 1
+                    push!(L, [i, j, "Nord"])
+                end
+                if i <= leng - 2 && G[i+1, j] == 1 && G[i+2, j] == 1
+                    push!(L, [i, j, "Sud"])
+                end
+                if j >= 3 && G[i, j-1] == 1 && G[i, j-2] == 1
+                    push!(L, [i, j, "Ouest"])
+                end
+                if j <= leng - 2 && G[i, j+1] == 1 && G[i, j+2] == 1
+                    push!(L, [i, j, "Est"])
+                end
+            end
+        end
+    end
+
+    return L
+
+end
+
+
+################################## Fonction Move ####################################
+
+# Prend en entrée une grille et un mouvement possible [i,j,d] avec (i,j) la case 
+# où le pion va arriver et d la direction ("Nord", "Sud", "Ouest", "Est")
+# On renvoie en sortie la grille avec le mouvement effectué
+
+#####################################################################################
+
+
+function Move(G::Matrix{Int}, L::Any)
+    i = L[1]
+    j = L[2]
+    d = L[3]
+    H = copy(G)
+    if d == "Nord" #dans ce cas au dessus de la grille on a du vide sur les deux cases
+        H[i-2,j] = 0
+        H[i-1,j] = 0
+    elseif d == "Sud" #dans ce cas en-dessous de la grille on a du vide sur les deux cases
+        H[i+2,j] = 0
+        H[i+1,j] = 0
+    elseif d == "Ouest" #dans ce cas à gauche de la grille on a du vide sur les deux cases
+        H[i, j-2] = 0
+        H[i, j-1] = 0
+    elseif d == "Est" #dans ce cas à droite de la grille on a du vide sur les deux cases
+        H[i, j+2] = 0
+        H[i, j+1] = 0
+    end
+    H[i,j] = 1 #dans tous les cas le pion atterrit en (i,j)
+    return H
+end
+
+################################## Fonction matrix_agglomeration ######################
+
+# Prend en entrée une grille 
+# On renvoie en sortie la matrice d'agglomération de cette grille 
+# Qui contient en chaque élément 
+
+#####################################################################################
+
+function matrix_agglomeration(G::Matrix{Int})
+    m = size(G, 1)
+    G_extend = fill(0, m + 2, m + 2) #on ajoute une bordure pour l'effet de bord
+    G_extend[2:m+1, 2:m+1] = replace(G, 0 => 0, 1 => 1, 2 => 0)#G_extend est une matrice avec un bord autour en plus pour pouvoir compter les 8 pions environnants  
+    H = fill(0, m, m) #H est la grille qu'on renverra
+    for i in 2:m+1
+        for j in 2:m+1
+            if G[i-1, j-1] <2 #case pouvant avoir un pion dessus, on 
+                H[i-1, j-1] = G_extend[i+1, j] + G_extend[i+1, j+1] + G_extend[i, j+1] + G_extend[i-1, j] + G_extend[i-1, j-1] + G_extend[i, j-1] + G_extend[i+1, j-1] + G_extend[i-1, j+1]
+                if G[i-1, j-1] == 0 #Si c'est une case vide, on pénalise H[i-1,j-1] dans le but de rassembler les pions
+                    H[i-1, j-1] -= 6
+                end
+            end
+        end
+    end
+    return H
+end
+
+####################### Fonction index_maximizing_agglomeration######################
+
+# Prend en entrée une grille et la liste des mouvements possibles L
+#Renvoie l'index de L tel que Move(G,L[index]) est le mouvement qui permet
+# de maximiser le nombre de billes environnantes
+
+#####################################################################################
+
+function index_maximizing_agglomeration(G::Matrix{Int}, L::Any)
+    max = 0
+    index = 1
+    lenL = length(L)
+    for i in 1:lenL
+
+        #Le fonctionnement est relativement simple, on va regarder 
+        #La grille obtenue à partir de G suite au mouvement L[i]
+        #pour tout i
+        
+        #La fonction matrix_agglomeration renvoit
+        #La matrice d'agglomération correspondant à la matrice où chaque case (i,j) est le nombre 
+        # des pions voisins présents autour de (i,j) [donc en (i,j-1),(i+1,j-1),(i-1,j-1),(i-1,j),(i+1,j),(i,j+1),(i-1,j+1),(i+1,j+1)]
+        #avec comme convention qu'un bord, qu'une case non habitable ou qu'une case vide vaut 0
+        #La somme de ses éléments est un indicateur d'agglomération des pions
+        #que l'on cherche à maximiser selon les mouvements possibles.
+
+        H = matrix_agglomeration(Move(G, L[i]))
+        if sum(H) >= max
+            max = sum(H)
+            index = i
+        end
+    end
+    return index
+end
+
+################################## Fonction heuristicSolve ##########################
+
+# Prend en entrée une grille à résoudre
+# Retourne en sortie une grille résolue en choisissant parmis les coups possibles ceux qui
+# maximisent l'agglomération des pions sur la grille
+
+#####################################################################################
+
+
+function heuristicSolve(G::Matrix{Int})
+
+    leng = size(G, 1) #On récupère la taille de la grille initiale
+
+    println("initial Grid") #on l'affiche
+    displayGrid(G)
+
+    H=copy(G)
+
+    n=0 #nombre 'étapes dans la partie
+    
+    for i in 1:leng
+        for j in 1:leng
+            if G[i, j] == 1
+                n += 1
+            end
+        end
+    end
+
+    t=0 #compteur de boucle pour empêcher de boucler à l'infini
+
+    while t < n
+        L= List_of_possible_move(H)
+        #Si pas de mouvements possibles à réaliser, on stop la boucle
+        if length(L) == 0
+            break
+        else
+            k = index_maximizing_agglomeration(H,L) #indice maximisant l'agglomération des pions
+            H=Move(H,L[k])
+        end
+        t += 1
+    end
+
+    return H, t
+
+end
+
+####################### Fonction index_maximizing_agglomeration######################
+
+# Prend en entrée une grille et la liste des mouvements possibles L
+#Renvoie l'index de L tel que Move(G,L[index]) est le mouvement qui permet
+# de maximiser le nombre de billes environnantes
+
+#####################################################################################
+
+
+
 function solveDataSet(path::String)
 
     for i in (length(readdir(path))+1):(length(readdir("res/cplex")))
@@ -251,118 +443,4 @@ function solveDataSet(path::String)
         close(file)
     end
     return 1
-end
-
-function heuristicSolve(G::Matrix{Int})
-
-    #####################################################################################
-    ################################ Initialisation #####################################
-    #####################################################################################
-
-    leng = size(G, 1) #On récupère la taille de la grille initiale
-
-    println("initial Grid") #on l'affiche
-    displayGrid(G)
-
-    listSteps = Matrix[]
-    push!(listSteps, G)
-    listOfPossibilities = []
-    t = 0
-
-    while t < 100
-        t += 1
-        listOfPossibilities = []
-        #Pour chaque trou, si on a deux pions alignés à côté, on marque la possibilité dans listOfPossibilities
-        for i in 1:leng
-            for j in 1:leng
-                if G[i, j] == 2 #trou sur la map
-                    if i >= 3 && G[i-1, j] == 3 && G[i-2, j] == 3
-                        push!(listOfPossibilities, [i, j, "up"])
-                    end
-                    if i <= l - 2 && G[i+1, j] == 3 && G[i+2, j] == 3
-                        push!(listOfPossibilities, [i, j, "down"])
-                    end
-                    if j >= 3 && G[i, j-1] == 3 && G[i, j-2] == 3
-                        push!(listOfPossibilities, [i, j, "left"])
-                    end
-                    if j <= c - 2 && G[i, j+1] == 3 && G[i, j+2] == 3
-                        push!(listOfPossibilities, [i, j, "right"])
-                    end
-                end
-            end
-        end
-
-        #println(listOfPossibilities)
-
-        if length(listOfPossibilities) == 0
-            break
-        else
-            #k =  Int(ceil(rand() * length(listOfPossibilities)))
-            k = heuristicChoice(G, listOfPossibilities)
-
-            G = doMove(G, listOfPossibilities[k])
-            A = copy(G)
-            push!(listSteps, A)
-        end
-    end
-
-    return listSteps, t
-
-end
-
-function doMove(G::Matrix{Int}, Possibilitie::Any)
-    i_hole = Possibilitie[1]
-    j_hole = Possibilitie[2]
-    action = Possibilitie[3]
-    A = copy(G)
-
-    if action == "up"
-        A[i_hole-2, j_hole] = 2
-        A[i_hole-1, j_hole] = 2
-    elseif action == "down"
-        A[i_hole+2, j_hole] = 2
-        A[i_hole+1, j_hole] = 2
-    elseif action == "left"
-        A[i_hole, j_hole-2] = 2
-        A[i_hole, j_hole-1] = 2
-    elseif action == "right"
-        A[i_hole, j_hole+2] = 2
-        A[i_hole, j_hole+1] = 2
-    end
-    A[i_hole, j_hole] = 3
-    return A
-end
-
-function heuristic_function(G::Matrix{Int})
-    l = size(G, 1)
-    c = size(G, 2)
-    INTER = fill(0, l + 2, c + 2)
-    INTER[2:l+1, 2:c+1] = replace(G, 1 => 0, 2 => 0, 3 => 1)
-    func = fill(0, l, c)
-    for i in 2:l+1
-        for j in 2:c+1
-            if G[i-1, j-1] > 1 #case valide
-                func[i-1, j-1] = INTER[i+1, j] + INTER[i+1, j+1] + INTER[i, j+1] + INTER[i-1, j] + INTER[i-1, j-1] + INTER[i, j-1] + INTER[i+1, j-1] + INTER[i-1, j+1]
-                if G[i-1, j-1] == 2
-                    func[i-1, j-1] -= 6
-                end
-            end
-        end
-    end
-    return func
-end
-
-function heuristicChoice(G::Matrix{Int}, listOfPossibilities::Any)
-    max = 0
-    index = 1
-    K = length(listOfPossibilities)
-    for i in 1:K
-        INTER = heuristic_function(doMove(G, listOfPossibilities[i]))
-        if sum(INTER) >= max
-            max = sum(INTER)
-            index = i
-        end
-    end
-    #println("max = ",max," index = ",index,"listOfPossibilities[index] = ",listOfPossibilities[index])
-    return index
 end
