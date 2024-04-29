@@ -289,6 +289,21 @@ function matrix_agglomeration(G::Matrix{Int})
         for j in 2:m+1
             if G[i-1, j-1] <2 #case pouvant avoir un pion dessus, on 
                 H[i-1, j-1] = G_extend[i+1, j] + G_extend[i+1, j+1] + G_extend[i, j+1] + G_extend[i-1, j] + G_extend[i-1, j-1] + G_extend[i, j-1] + G_extend[i+1, j-1] + G_extend[i-1, j+1]
+            end
+        end
+    end
+    return H
+end
+
+function matrix_agglomeration_wp(G::Matrix{Int})
+    m = size(G, 1)
+    G_extend = fill(0, m + 2, m + 2) #on ajoute une bordure pour l'effet de bord
+    G_extend[2:m+1, 2:m+1] = replace(G, 0 => 0, 1 => 1, 2 => 0)#G_extend est une matrice avec un bord autour en plus pour pouvoir compter les 8 pions environnants  
+    H = fill(0, m, m) #H est la grille qu'on renverra
+    for i in 2:m+1
+        for j in 2:m+1
+            if G[i-1, j-1] <2 #case pouvant avoir un pion dessus, on 
+                H[i-1, j-1] = G_extend[i+1, j] + G_extend[i+1, j+1] + G_extend[i, j+1] + G_extend[i-1, j] + G_extend[i-1, j-1] + G_extend[i, j-1] + G_extend[i+1, j-1] + G_extend[i-1, j+1]
                 if G[i-1, j-1] == 0 #Si c'est une case vide, on pénalise H[i-1,j-1] dans le but de rassembler les pions
                     H[i-1, j-1] -= 6
                 end
@@ -297,6 +312,7 @@ function matrix_agglomeration(G::Matrix{Int})
     end
     return H
 end
+
 
 ####################### Fonction index_maximizing_agglomeration######################
 
@@ -332,6 +348,74 @@ function index_maximizing_agglomeration(G::Matrix{Int}, L::Any)
     return index
 end
 
+function index_maximizing_agglomeration_wp(G::Matrix{Int}, L::Any)
+    max = 0
+    index = 1
+    lenL = length(L)
+    for i in 1:lenL
+
+        #Le fonctionnement est relativement simple, on va regarder 
+        #La grille obtenue à partir de G suite au mouvement L[i]
+        #pour tout i
+        
+        #La fonction matrix_agglomeration renvoit
+        #La matrice d'agglomération correspondant à la matrice où chaque case (i,j) est le nombre 
+        # des pions voisins présents autour de (i,j) [donc en (i,j-1),(i+1,j-1),(i-1,j-1),(i-1,j),(i+1,j),(i,j+1),(i-1,j+1),(i+1,j+1)]
+        #avec comme convention qu'un bord, qu'une case non habitable ou qu'une case vide vaut 0
+        #La somme de ses éléments est un indicateur d'agglomération des pions
+        #que l'on cherche à maximiser selon les mouvements possibles.
+
+        H = matrix_agglomeration_wp(Move(G, L[i]))
+        if sum(H) >= max
+            max = sum(H)
+            index = i
+        end
+    end
+    return index
+end
+
+function random_index_choice(L::Any)
+    return Int(floor(rand() * length(L))) + 1
+end
+
+
+
+function index_maximizing_distance_to_center(G::Matrix{Int}, L::Any)
+    max = 0
+    index = 1
+    k=1
+    center = Int(size(G,1) ÷ 2 + 1)
+    for x in L
+        i=x[1]
+        j=x[2]
+        d = abs(i - center) + abs(j - center)
+        if(d>=max)
+            max=d
+            index=k
+        end
+        k+=1    
+    end
+    return index
+end
+
+function index_minimizing_distance_to_center(G::Matrix{Int}, L::Any)
+    min = 0
+    index = 1
+    k=1
+    center = Int(size(G,1) ÷ 2 + 1)
+    for x in L
+        i=x[1]
+        j=x[2]
+        d = abs(i - center) + abs(j - center)
+        if(d<=min)
+            min=d
+            index=k
+        end
+        k+=1    
+    end
+    return index
+end
+
 ################################## Fonction heuristicSolve ##########################
 
 # Prend en entrée une grille à résoudre
@@ -344,9 +428,6 @@ end
 function heuristicSolve(G::Matrix{Int})
 
     leng = size(G, 1) #On récupère la taille de la grille initiale
-
-    println("initial Grid") #on l'affiche
-    displayGrid(G)
 
     H=copy(G)
 
@@ -378,69 +459,253 @@ function heuristicSolve(G::Matrix{Int})
 
 end
 
-####################### Fonction index_maximizing_agglomeration######################
+
+
+
+function heuristicSolve_wp(G::Matrix{Int})
+
+    leng = size(G, 1) #On récupère la taille de la grille initiale
+
+    H=copy(G)
+
+    n=0 #nombre 'étapes dans la partie
+    
+    for i in 1:leng
+        for j in 1:leng
+            if G[i, j] == 1
+                n += 1
+            end
+        end
+    end
+
+    t=0 #compteur de boucle pour empêcher de boucler à l'infini
+
+    while t < n
+        L= List_of_possible_move(H)
+        #Si pas de mouvements possibles à réaliser, on stop la boucle
+        if length(L) == 0
+            break
+        else
+            k = index_maximizing_agglomeration_wp(H,L) #indice maximisant l'agglomération des pions
+            H=Move(H,L[k])
+        end
+        t += 1
+    end
+
+    return H, t
+
+end
+
+
+
+function heuristicSolve_random(G::Matrix{Int})
+
+    leng = size(G, 1) #On récupère la taille de la grille initiale
+
+    H=copy(G)
+
+    n=0 #nombre 'étapes dans la partie
+    
+    for i in 1:leng
+        for j in 1:leng
+            if G[i, j] == 1
+                n += 1
+            end
+        end
+    end
+
+    t=0 #compteur de boucle pour empêcher de boucler à l'infini
+
+    while t < n
+        L= List_of_possible_move(H)
+        #Si pas de mouvements possibles à réaliser, on stop la boucle
+        if length(L) == 0
+            break
+        else
+            k = random_index_choice(L) #indice random
+            H=Move(H,L[k])
+        end
+        t += 1
+    end
+
+    return H, t
+
+end
+
+
+
+
+
+function heuristicSolve_distance_max(G::Matrix{Int})
+
+    leng = size(G, 1) #On récupère la taille de la grille initiale
+
+    H=copy(G)
+
+    n=0 #nombre 'étapes dans la partie
+    
+    for i in 1:leng
+        for j in 1:leng
+            if G[i, j] == 1
+                n += 1
+            end
+        end
+    end
+
+    t=0 #compteur de boucle pour empêcher de boucler à l'infini
+
+    while t < n
+        L= List_of_possible_move(H)
+        #Si pas de mouvements possibles à réaliser, on stop la boucle
+        if length(L) == 0
+            break
+        else
+            k = index_maximizing_distance_to_center(H,L) #indice maximisant l'agglomération des pions
+            H=Move(H,L[k])
+        end
+        t += 1
+    end
+
+    return H, t
+
+end
+
+
+function heuristicSolve_distance_min(G::Matrix{Int})
+
+    leng = size(G, 1) #On récupère la taille de la grille initiale
+
+    H=copy(G)
+
+    n=0 #nombre 'étapes dans la partie
+    
+    for i in 1:leng
+        for j in 1:leng
+            if G[i, j] == 1
+                n += 1
+            end
+        end
+    end
+
+    t=0 #compteur de boucle pour empêcher de boucler à l'infini
+
+    while t < n
+        L= List_of_possible_move(H)
+        #Si pas de mouvements possibles à réaliser, on stop la boucle
+        if length(L) == 0
+            break
+        else
+            k = index_minimizing_distance_to_center(H,L) #indice maximisant l'agglomération des pions
+            H=Move(H,L[k])
+        end
+        t += 1
+    end
+
+    return H, t
+
+end
+
+
+
+####################### Fonction solveDataSet #################################
 
 # Prend en entrée une grille et la liste des mouvements possibles L
 #Renvoie l'index de L tel que Move(G,L[index]) est le mouvement qui permet
 # de maximiser le nombre de billes environnantes
 
-#####################################################################################
+###############################################################################
 
 
 
-function solveDataSet(path::String)
 
-    for i in (length(readdir(path))+1):(length(readdir("res/cplex")))
-        file = "res/cplex/cplex_$i.txt"
-        rm(file)
+
+####################      Test unitaires des fonctions      ###################
+
+# Afin de garantir une approche qui ne fonce pas droit dans le mur sans vérif
+
+###############################################################################
+
+
+
+function create_basic_board()
+    size=7
+    G = zeros(Int, size, size)
+    # Placement des obstacles
+    obstacles = [(1, 1), (1, 2), (2, 1), (2, 2), (6, 1), (6, 2), (7, 1), (7, 2), (1, 6), (1, 7), (2, 6), (2, 7),(6, 6), (7, 6), (6, 7), (7, 7)]
+    for (i, j) in obstacles
+        G[i, j] = 2
     end
-
-    for i in 1:size(readdir(path), 1) # enumerate ne fonctionne pas car ça lit les fichiers dans un ordre aléatoire
-
-        G = readInputFile(joinpath(path, "instance_$i.txt"))
-        out = @timed cplexSolve(G)
-        x = out.value[1]
-        nb_steps = out.value[2]
-        isOptimal = out.value[3]
-
-        n = size(x, 1)
-        l = size(x, 2)
-        c = size(x, 3)
-
-        text = ""
-
-        if x != -1
-            for s in 1:n
-                text = string(text, "Etape ", string(s), " : \n")
-                for i in 1:l
-                    for j in 1:c
-                        if x[s, i, j] == 1
-                            text = string(text, "  ")
-                        elseif x[s, i, j] == 2
-                            text = string(text, " □")
-                        else
-                            text = string(text, " ■")
-                        end
-                    end
-                    if i != l
-                        text = string(text, "\n")
-                    end
-                end
-                text = string(text, "\n\n")
+    # Placement des pions en dehors des obstacles
+    for i in 1:size
+        for j in 1:size
+            if (i, j) ∉ obstacles
+                G[i, j] = 1
             end
         end
-
-        file = open("res/cplex/cplex_$i.txt", "w")
-        write(file, "taille instance = ", string(l), " x ", string(c), "\n")
-        write(file, "solveTime = ", string(out.time), " s\n")
-        write(file, "nombre d'étpes nécessaires à la resolution = ", string(nb_steps), "\n")
-        if x != -1 && isOptimal
-            write(file, "isOptimal = true\n\n")
-        else
-            write(file, "isOptimal = false\n\n")
-        end
-        write(file, text)
-        close(file)
     end
-    return 1
+    G[4, 4]=0 #le trou au milieu tu as capté
+    return G
 end
+
+function print_basic_board(G::Matrix{Int})
+    n = size(G, 1)
+    for i in 1:n
+        for j in 1:n
+            if(G[i,j]==0)
+                print("o")
+            end
+            if(G[i,j]==1)
+                print("x")
+            end
+            if(G[i,j]==2)
+                print(" ")
+            end
+            print(" ")
+        end
+        println()  # Aller à la ligne pour la prochaine rangée
+    end
+    println()
+end
+
+
+function print_list_elements(L)
+    for entry in L
+        println(entry[1], " ", entry[2], " ", entry[3])
+        println()
+    end
+end
+
+
+# Création de la matrice G représentant le plateau anglais
+println("Plateau de base :")
+G = create_basic_board()
+
+# Affichage du plateau
+print_basic_board(G)
+
+
+# Liste des mouvements possibles
+#print_list_elements(List_of_possible_move(G))
+
+# Test heuristicsolve
+
+H, u=heuristicSolve(G)
+A, u=heuristicSolve_wp(G)
+M, u=heuristicSolve_random(G)
+B, u=heuristicSolve_distance_max(G)
+C, u=heuristicSolve_distance_min(G)
+
+println("résolution heuristique sans pénalisation des trous :")
+print_basic_board(H)
+
+println("résolution heuristique avec pénalisation des trous :")
+print_basic_board(A)
+
+println("résolution heuristique avec choix random :")
+print_basic_board(M)
+
+println("résolution heuristique avec maximisation des distances au centre :")
+print_basic_board(B)
+
+println("résolution heuristique avec minimisant des distances au centre :")
+print_basic_board(C)
