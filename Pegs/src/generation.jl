@@ -75,20 +75,20 @@ Remark: a grid is generated only if the corresponding output file does not alrea
 function generateDataSet(types::Array{String, 1})
     # For each grid size considered
     for type in types
-         in [7,9]
-		# Generate 10 instances
-		for i in 1:10
-			fileName = cwd*adresse*"/data/instance_t"*string(size)*"_"*string(i)*".txt"
-			if !isfile(fileName)
-				println("-- Generating file "*fileName)
-				grid = generateInstance(size,"croix")
-                if grid!=-1
-                    saveInstance(grid, fileName)
+        if type=="croix"
+            # Generate 10 instances
+            for size in [5,7,9,11,13,15]
+                fileName = cwd*adresse*"/data/instance_croix_"*string(size)*".txt"
+                if !isfile(fileName)
+                    println("-- Generating file "*fileName)
+                    grid = generateInstance(size,"croix")
+                    if grid!=-1
+                        saveInstance(grid, fileName)
+                    end
                 end
-			end
-		end
+		    end
+        end
 	end    
 end
 
 generateDataSet(["croix"])
-

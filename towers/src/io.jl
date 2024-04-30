@@ -9,9 +9,10 @@ adresse="/Projet/RO203/towers"
 """
 Read an instance from an input file
 
-- Argument:
+- Arguments:
 inputFile: path of the input file
 """
+
 function readInputFile(inputFile::String)
     datafile = open(inputFile) #Open the input file
     data = readlines(datafile)
@@ -45,18 +46,15 @@ end
 Display an initial game represented by a matrix and four visibility vectors.
 
 Arguments:
-    - t: array of size n*n with values in [| 0, n |] (0 if the cell is empty)
-    - left: vector of visibility left
-    - right: vector of visibility right
-    - up: vector of visbility upper
-    - down: vector of visibility down
+    - grid: array of size n*n with values in [| 0, n |] (0 if the cell is empty)
+    - up, down, left right: four visibility vectors
 """
-function displayGrid(t::Matrix{Int64}, left::Array{Int64, 1}, right::Array{Int64, 1}, up::Array{Int64, 1}, down::Array{Int, 1})
+
+function displayGrid(grid::Matrix{Int64}, left::Array{Int64, 1}, right::Array{Int64, 1}, up::Array{Int64, 1}, down::Array{Int, 1})
     n = size(t, 1)
     blockSize = round.(Int, sqrt(n))
     print("    ")
-
-    ## Display the upper visbility vector.
+    #Display the upper visbility vector.
     for i in 1:n
         if up[i] == 0
             print(" -")
@@ -68,11 +66,11 @@ function displayGrid(t::Matrix{Int64}, left::Array{Int64, 1}, right::Array{Int64
         end
         print(" ")
     end
-    ## Display the upper border of the grid.
+    #Display the upper border of the grid.
     println("\n    ", "-"^(3*n+blockSize-1)) 
-    ## For each cell (l, c)
+    #For each cell (l, c)
     for l in 1:n
-        ## Display the left visbility vector.
+        #Display the left visbility vector.
         if left[l] == 0
             print(" -")
         else
@@ -82,7 +80,7 @@ function displayGrid(t::Matrix{Int64}, left::Array{Int64, 1}, right::Array{Int64
             print(left[l])
         end
         print(" |")
-        ## Display the grid t.
+        #Display the grid t.
         for c in 1:n
             if t[l, c] == 0
                 print(" -")
@@ -95,7 +93,7 @@ function displayGrid(t::Matrix{Int64}, left::Array{Int64, 1}, right::Array{Int64
             print(" ")
         end
         print(" |")
-        ## Display the right visbility vector.
+        #Display the right visbility vector.
         if right[l] == 0
             println(" -")
         else
@@ -105,9 +103,9 @@ function displayGrid(t::Matrix{Int64}, left::Array{Int64, 1}, right::Array{Int64
             println(right[l])
         end
     end
-    ## Display the bottom border of the grid.
+    #Display the bottom border of the grid.
     print("    ", "-"^(3*n+blockSize-1),"\n    ")
-    ## Display the down visbility vector.
+    #Display the down visbility vector.
     for i in 1:n
         if down[i] == 0
             print(" -")
@@ -124,19 +122,17 @@ function displayGrid(t::Matrix{Int64}, left::Array{Int64, 1}, right::Array{Int64
 end
 
 """
-Display an solution of game represented by a matrix and four visibility vectors.
+Display an solution of game represented by a cplex matrix and four visibility vectors.
 
 Arguments:
     - xk: array of size n*n*n (xk[i, j, k] = 1 if cell (i, j) has value k)
-    - left: vector of visibility left
-    - right: vector of visibility right
-    - up: vector of visbility upper
-    - down: vector of visibility down
+    - up, down, left, right: four visibility vectors
 """
+
 function displaySolution(xk::Array{VariableRef, 3}, left::Array{Int64, 1}, right::Array{Int64, 1}, up::Array{Int64, 1}, down::Array{Int64, 1})
     n = size(xk, 1)
     blockSize = round.(Int, sqrt(n))
-    ## Display the upper visbility vector.
+    #Display the upper visbility vector.
     print("    ")
     for i in 1:n
         if up[i] == 0
@@ -149,14 +145,11 @@ function displaySolution(xk::Array{VariableRef, 3}, left::Array{Int64, 1}, right
         end
         print(" ")
     end
-
-    ## Display the upper border of the grid.
+    #Display the upper border of the grid.
     println("\n    ", "-"^(3*n+blockSize-1)) 
-    
-    ## For each cell (l, c)
+    #For each cell (l, c)
     for l in 1:n
-
-        ## Display the left visbility vector.
+        #Display the left visbility vector.
         if left[l] == 0
             print(" -")
         else
@@ -166,8 +159,7 @@ function displaySolution(xk::Array{VariableRef, 3}, left::Array{Int64, 1}, right
             print(left[l])
         end
         print(" |")
-
-        ## Display the solution x.
+        #Display the solution x.
         for c in 1:n
             for k in 1:n
                 if JuMP.value(xk[l, c, k]) > TOL
@@ -180,8 +172,7 @@ function displaySolution(xk::Array{VariableRef, 3}, left::Array{Int64, 1}, right
             print(" ")
         end
         print(" |")
-
-        ## Display the right visbility vector.
+        #Display the right visbility vector.
         if right[l] == 0
             println(" -")
         else
@@ -191,11 +182,9 @@ function displaySolution(xk::Array{VariableRef, 3}, left::Array{Int64, 1}, right
             println(right[l])
         end
     end
-
-    ## Display the bottom border of the grid.
+    #Display the bottom border of the grid.
     print("    ", "-"^(3*n+blockSize-1),"\n    ")
-
-    ## Display the down visbility vector.
+    #Display the down visbility vector.
     for i in 1:n
         if down[i] == 0
             print(" -")
@@ -214,7 +203,7 @@ end
 Create a pdf file which contains a performance diagram associated to the results of the ../res folder
 Display one curve for each subfolder of the ../res folder.
 
-Arguments
+Arguments:
 - outputFile: path of the output file
 
 Prerequisites:
@@ -222,6 +211,7 @@ Prerequisites:
 - Each text file correspond to the resolution of one instance
 - Each text file contains a variable "solveTime" and a variable "isOptimal"
 """
+
 function performanceDiagram(outputFile::String)
     resultFolder = cwd*adresse*"/res/"
     maxSize=42 #Maximal number of files in a subfolder
@@ -247,13 +237,13 @@ function performanceDiagram(outputFile::String)
     end
     folderCount = 0
     maxSolveTime = 0
-    # For each subfolder
+    #For each subfolder
     for file in readdir(resultFolder)
         path = resultFolder * file
         if isdir(path)
             folderCount += 1
             fileCount = 0
-            # For each text file in the subfolder
+            #For each text file in the subfolder
             for resultFile in filter(x->occursin(".txt", x), readdir(path))
                 fileCount += 1
                 readlines(path * "/" * resultFile)
@@ -315,7 +305,7 @@ end
 Create a latex file which contains an array with the results of the ../res folder.
 Each subfolder of the ../res folder contains the results of a resolution method.
 
-Arguments
+Arguments:
 - outputFile: path of the output file
 
 Prerequisites:
@@ -323,16 +313,17 @@ Prerequisites:
 - Each text file correspond to the resolution of one instance
 - Each text file contains a variable "solveTime" and a variable "isOptimal"
 """
+
 function resultsArray(outputFile::String)
     resultFolder = cwd*adresse*"/res/"
     dataFolder = cwd*adresse*"/data/"
-    # Maximal number of files in a subfolder
+    #Maximal number of files in a subfolder
     maxSize = 42
     # Number of subfolders
     subfolderCount = 1
-    # Open the latex output file
+    #Open the latex output file
     fout = open(outputFile, "w")
-    # Print the latex file output
+    #Print the latex file output
     println(fout, raw"""\documentclass{article}
 \usepackage[french]{babel}
 \usepackage [utf8] {inputenc} % utf-8 / latin1 
@@ -357,20 +348,20 @@ function resultsArray(outputFile::String)
 \begin{center}
 \renewcommand{\arraystretch}{1.4} 
  \begin{tabular}{l"""
-    # Name of the subfolder of the result folder (i.e, the resolution methods used)
+    #Name of the subfolder of the result folder (i.e, the resolution methods used)
     folderName = Array{String, 1}()
-    # List of all the instances solved by at least one resolution method
+    #List of all the instances solved by at least one resolution method
     solvedInstances = Array{String, 1}()
-    # For each file in the result folder
+    #For each file in the result folder
     for file in readdir(resultFolder)
         path = resultFolder * file
-        # If it is a subfolder
+        #If it is a subfolder
         if isdir(path)
-            # Add its name to the folder list
+            #Add its name to the folder list
             folderName = vcat(folderName, file)
             subfolderCount += 1
             folderSize = size(readdir(path), 1)
-            # Add all its files in the solvedInstances array
+            #Add all its files in the solvedInstances array
             for file2 in filter(x->occursin(".txt", x), readdir(path))
                 solvedInstances = vcat(solvedInstances, file2)
             end
@@ -379,19 +370,19 @@ function resultsArray(outputFile::String)
             end
         end
     end
-    # Only keep one string for each instance solved
+    #Only keep one string for each instance solved
     unique(solvedInstances)
-    # For each resolution method, add two columns in the array
+    #For each resolution method, add two columns in the array
     for folder in folderName
         header *= "rr"
     end
     header *= "}\n\t\\hline\n"
-    # Create the header line which contains the methods name
+    #Create the header line which contains the methods name
     for folder in folderName
         header *= " & \\multicolumn{2}{c}{\\textbf{" * folder * "}}"
     end
     header *= "\\\\\n\\textbf{Instance} "
-    # Create the second header line with the content of the result columns
+    #Create the second header line with the content of the result columns
     for folder in folderName
         header *= " & \\textbf{Temps (s)} & \\textbf{Optimal ?} "
     end
@@ -401,22 +392,22 @@ function resultsArray(outputFile::String)
 
 """
     println(fout, header)
-    # On each page an array will contain at most maxInstancePerPage lines with results
+    #On each page an array will contain at most maxInstancePerPage lines with results
     maxInstancePerPage = 30
     id = 1
     # For each solved files
     for solvedInstance in solvedInstances
-        # If we do not start a new array on a new page
+        #If we do not start a new array on a new page
         if rem(id, maxInstancePerPage) == 0
             println(fout, footer, "\\newpage")
             println(fout, header)
         end 
-        # Replace the potential underscores '_' in file names
+        #Replace the potential underscores '_' in file names
         print(fout, replace(solvedInstance, "_" => "\\_"))
-        # For each resolution method
+        #For each resolution method
         for method in folderName
             path = resultFolder * method * "/" * solvedInstance
-            # If the instance has been solved by this method
+            #If the instance has been solved by this method
             if isfile(path)
                 readlines(path)
                 solveTime=readlines(path)[end-1][13:18]
@@ -427,7 +418,7 @@ function resultsArray(outputFile::String)
                 if isOptimal=="true"
                     println(fout, "\$\\times\$")
                 end
-            # If the instance has not been solved by this method
+            #If the instance has not been solved by this method
             else
                 println(fout, " & - & - ")
             end
@@ -435,41 +426,51 @@ function resultsArray(outputFile::String)
         println(fout, "\\\\")
         id += 1
     end
-    # Print the end of the latex file
+    #Print the end of the latex file
     println(fout, footer)
     println(fout, "\\end{document}")
     close(fout)  
 end
 
-function writeSolution(fout::IOStream, x::Array{VariableRef,3}, up, down, left, right)
-    # Convert the solution from x[i, j, k] variables into t[i, j] variables
+"""
+Write a solution in an output stream from a cplex matrix and four vectors
+
+Arguments:
+- fout: the output stream (usually an output file)
+- array of size n*n*n (xk[i, j, k] = 1 if cell (i, j) has value k)
+- up, down, left, right: four visibility vectors
+"""
+
+function writeSolution(fout::IOStream, xk::Array{VariableRef,3}, up, down, left, right)
+    #Convert the solution from x[i, j, k] variables into t[i, j] variables
     n = size(x, 1)
     t = Matrix{Int64}(undef, n, n)
-    
     for l in 1:n
         for c in 1:n
             for k in 1:n
-                if JuMP.value(x[l, c, k]) > TOL
+                if JuMP.value(xk[l, c, k]) > TOL
                     t[l, c] = k
                 end
             end
         end 
     end
-    # Write the solution
+    #Write the solution
     writeSolution(fout, t, up, down, left, right)
 end
 
 """
-Write a solution in an output stream
+Write a solution in an output stream from a matrix and 4 vectors
 
-Arguments
+Arguments:
 - fout: the output stream (usually an output file)
-- t: 2-dimensional array of size n*n
+- x: 2-dimensional array of size n*n
+- up, down, left, right: four visibility vectors
 """
+
 function writeSolution(fout::IOStream, xk::Matrix{Int64}, up, down, left, right)
     n = size(xk, 1)
     blockSize = round.(Int, sqrt(n))
-    ## Display the upper visbility vector.
+    #Display the upper visbility vector.
     print(fout,"    ")
     for i in 1:n
         if up[i] == 0
@@ -482,13 +483,13 @@ function writeSolution(fout::IOStream, xk::Matrix{Int64}, up, down, left, right)
         end
         print(fout,"")
     end
-    ## Display the upper border of the grid.
+    #Display the upper border of the grid.
     print(fout,"\n   ", "-"^(2*n+blockSize)) 
     println(fout)
     
-    ## For each cell (l, c)
+    #For each cell (l, c)
     for l in 1:n
-        ## Display the left visbility vector.
+        #Display the left visbility vector.
         if left[l] == 0
             print(fout," -")
         else
@@ -498,15 +499,13 @@ function writeSolution(fout::IOStream, xk::Matrix{Int64}, up, down, left, right)
             print(fout,left[l])
         end
         print(fout," | ")
-
-        ## Display the solution x.
+        #Display the solution x.
         for c in 1:n
             print(fout,xk[l,c])
             print(fout," ")
         end
         print(fout," |")
-
-        ## Display the right visbility vector.
+        #Display the right visbility vector.
         if right[l] == 0
             println(fout," -")
         else
@@ -516,11 +515,9 @@ function writeSolution(fout::IOStream, xk::Matrix{Int64}, up, down, left, right)
             println(fout,right[l])
         end
     end
-
-    ## Display the bottom border of the grid.
+    #Display the bottom border of the grid.
     print(fout,"   ", "-"^(2*n+blockSize),"\n    ")
-
-    ## Display the down visbility vector.
+    #Display the down visbility vector.
     for i in 1:n
         if down[i] == 0
             print(fout," -")

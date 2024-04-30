@@ -6,9 +6,11 @@ adresse="/Projet/RO203/towers"
 
 """
 Generate a n*n grid
-Argument
+
+Arguments:
 - n: size of the grid
 """
+
 function generateGrid(n::Int64) #Generate a filled grid
     grid=Array{Int64, 2}(zeros(n, n)) #Generate an empty grid 
     filled=0
@@ -20,19 +22,26 @@ function generateGrid(n::Int64) #Generate a filled grid
 		push!(numTried,v)
 		while !isValuable(grid,i,j,v) && size(numTried, 1) < n
 			v = rand(1:n)
-			if !(v in numTried)
+			if !(v in numTried) #If v has not already been tried for this case
 				push!(numTried,v)
 			end
 		end
 		grid[i,j]=v
 		filled+=1
-		if size(numTried, 1)>=n
+		if size(numTried, 1)>=n #None of the integer from 1:n can fit in this case, so the grid is not admissible
 			grid = Matrix{Int64}(zeros(n, n))
 			filled=0
 		end
 	end
     return grid
 end
+
+"""
+Generate vectors from a given grid
+
+Arguments:
+- grid: given grid
+"""
 
 function generateVectors(grid::Array{Int64, 2}) #Generate the four vectors of a filled grid
     n=size(grid,1)
@@ -87,6 +96,15 @@ function generateVectors(grid::Array{Int64, 2}) #Generate the four vectors of a 
     return up,down,left,right
 end
 
+"""
+Verify if a number can be added to a partially completed grid
+
+Arguments:
+- grid: grid
+- i,j: case
+- v: value to check
+"""
+
 function isValuable(grid::Array{Int64, 2}, i::Int64, j::Int64, v::Int64)
     n = size(grid,1)
     for l in 1:n
@@ -102,14 +120,22 @@ function isValuable(grid::Array{Int64, 2}, i::Int64, j::Int64, v::Int64)
     return true
 end
 
+"""
+Save an instance with an empty grid and the four visibility vectors
+
+Arguments:
+- t: matrix of size (n+2)*(n+2)
+- outputFile: file where to print the grid
+"""
+
 function saveInstance(t::Matrix{Int64}, outputFile::String)
     n = size(t,1)
-    # Open the output file
+    #Open the output file
     writer = open(outputFile,"w")
-    # For each cell (l, c) of the grid
+    #For each cell (l, c) of the grid
     for l in 1:n
         for c in 1:n
-            # Write its value
+            #Write its value
             if t[l,c]==0
                 print(writer," ")
             else
@@ -127,13 +153,15 @@ end
 
 """
 Generate all the instances
+
 Remark: a grid is generated only if the corresponding output file does not already exist
 """
+
 function generateDataSet()
 	cwd=pwd()
-    # For each grid size considered
-    for size in [5,6,7,8,12]
-		# Generate 10 instances
+    #For each grid size considered
+    for size in [5,6,7,8]
+		#Generate 10 instances
 		for i in 1:10
 			fileName = cwd*adresse*"/data/instance_t"*string(size)*"_"*string(i)*".txt"
 			if !isfile(fileName)
