@@ -4,6 +4,9 @@ using CPLEX
 include("generation.jl")
 include("io.jl")
 
+cwd=pwd()
+adresse="/Projet/RO203/towers"
+
 TOL = 0.00001
 
 """
@@ -98,8 +101,8 @@ Remark: If an instance has previously been solved (either by cplex or the heuris
 """
 function solveDataSet()
     cwd=pwd()
-    dataFolder = cwd*"/RO203/towers/data/"
-    resFolder = cwd*"/RO203/towers/res/"
+    dataFolder = cwd*adresse*"/data/"
+    resFolder = cwd*adresse*"/res/"
 
     # Array which contains the name of the resolution methods
     resolutionMethod = ["cplex"]

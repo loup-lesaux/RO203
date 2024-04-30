@@ -2,7 +2,9 @@
 
 using JuMP
 using Plots
-import GR
+import .GR
+
+cwd=pwd()
 
 """
 Read a grid from an input file
@@ -411,3 +413,5 @@ function resultsArray(outputFile::String)
     close(fout)
     
 end 
+
+resultsArray(cwd*"/Projet/RO203/sudoku1.0/res/array.tex")

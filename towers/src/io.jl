@@ -3,6 +3,9 @@ using JuMP
 using Plots
 import .GR
 
+cwd=pwd()
+adresse="/Projet/RO203/towers"
+
 """
 Read an instance from an input file
 
@@ -220,10 +223,10 @@ Prerequisites:
 - Each text file contains a variable "solveTime" and a variable "isOptimal"
 """
 function performanceDiagram(outputFile::String)
-    resultFolder = "../res/"
-    maxSize=0 #Maximal number of files in a subfolder
-    subfolderCount=0 #Number of subfolders
-    folderName=Array{String, 1}()
+    resultFolder = cwd*adresse*"/res/"
+    maxSize=42 #Maximal number of files in a subfolder
+    subfolderCount=1 #Number of subfolders
+    folderName = Vector{String}()
     for file in readdir(resultFolder) #For each file in the result folder
         path = resultFolder * file
         if isdir(path) #If it is a subfolder
@@ -253,22 +256,26 @@ function performanceDiagram(outputFile::String)
             # For each text file in the subfolder
             for resultFile in filter(x->occursin(".txt", x), readdir(path))
                 fileCount += 1
-                include(path * "/" * resultFile)
-                if isOptimal
+                readlines(path * "/" * resultFile)
+                solveTime=readlines(path * "/" * resultFile)[end-1][13:18]
+                #solveTime=replace(solveTime, "." => ",")
+                solveTime = parse(Float64, solveTime)
+                isOptimal = readlines(path * "/" * resultFile)[end][13:16]
+                if isOptimal == "true"
                     results[folderCount, fileCount] = solveTime
                     if solveTime > maxSolveTime
                         maxSolveTime = solveTime
-                    end 
-                end 
-            end 
+                    end
+                end
+            end
         end
-    end 
+    end
     #Sort each row increasingly
     results = sort(results, dims=2)
     println("Max solve time: ", maxSolveTime)
     n=size(results,1)
     #For each line to plot
-    for dim in 1:n
+    for dim in 1:1
         x = Array{Float64, 1}()
         y = Array{Float64, 1}()
         #x coordinate of the previous inflexion point
@@ -299,15 +306,8 @@ function performanceDiagram(outputFile::String)
         end
         append!(x, maxSolveTime)
         append!(y, currentId - 1)
-        #If it is the first subfolder
-        if dim == 1
-            # Draw a new plot
-            plot(x, y, label = folderName[dim], legend = :bottomright, xaxis = "Time (s)", yaxis = "Solved instances",linewidth=3)
-        #Otherwise 
-        else
-            #Add the new curve to the created plot
-            savefig(plot!(x, y, label = folderName[dim], linewidth=3), outputFile)
-        end 
+        plot(x, y, label = folderName[dim], legend = :bottomright, xaxis = "Time (s)", yaxis = "Solved instances",linewidth=3)
+        savefig(outputFile)
     end
 end 
 
@@ -324,12 +324,12 @@ Prerequisites:
 - Each text file contains a variable "solveTime" and a variable "isOptimal"
 """
 function resultsArray(outputFile::String)
-    resultFolder = "../res/"
-    dataFolder = "../data/"
+    resultFolder = cwd*adresse*"/res/"
+    dataFolder = cwd*adresse*"/data/"
     # Maximal number of files in a subfolder
-    maxSize = 0
+    maxSize = 42
     # Number of subfolders
-    subfolderCount = 0
+    subfolderCount = 1
     # Open the latex output file
     fout = open(outputFile, "w")
     # Print the latex file output
@@ -418,9 +418,13 @@ function resultsArray(outputFile::String)
             path = resultFolder * method * "/" * solvedInstance
             # If the instance has been solved by this method
             if isfile(path)
-                include(path)
+                readlines(path)
+                solveTime=readlines(path)[end-1][13:18]
+                #solveTime=replace(solveTime, "." => ",")
+                solveTime = parse(Float64, solveTime)
+                isOptimal=readlines(path)[end][13:16]
                 println(fout, " & ", round(solveTime, digits=2), " & ")
-                if isOptimal
+                if isOptimal=="true"
                     println(fout, "\$\\times\$")
                 end
             # If the instance has not been solved by this method
@@ -451,13 +455,9 @@ function writeSolution(fout::IOStream, x::Array{VariableRef,3}, up, down, left, 
             end
         end 
     end
-
     # Write the solution
     writeSolution(fout, t, up, down, left, right)
-
 end
-
-
 
 """
 Write a solution in an output stream
@@ -483,7 +483,7 @@ function writeSolution(fout::IOStream, xk::Matrix{Int64}, up, down, left, right)
         print(fout,"")
     end
     ## Display the upper border of the grid.
-    print(fout,"\n   ", "-"^(2*n+blockSize-1)) 
+    print(fout,"\n   ", "-"^(2*n+blockSize)) 
     println(fout)
     
     ## For each cell (l, c)
@@ -518,7 +518,7 @@ function writeSolution(fout::IOStream, xk::Matrix{Int64}, up, down, left, right)
     end
 
     ## Display the bottom border of the grid.
-    print(fout,"   ", "-"^(2*n+blockSize-1),"\n    ")
+    print(fout,"   ", "-"^(2*n+blockSize),"\n    ")
 
     ## Display the down visbility vector.
     for i in 1:n
@@ -534,3 +534,6 @@ function writeSolution(fout::IOStream, xk::Matrix{Int64}, up, down, left, right)
     end
     println(fout)
 end 
+
+performanceDiagram(cwd*adresse*"/res/graphe.pdf")
+#resultsArray(cwd*adresse*"/LaTeX/array.tex")
