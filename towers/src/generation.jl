@@ -1,6 +1,9 @@
 # This file contains methods to generate a data set of instances 
 include("io.jl")
 
+cwd=pwd()
+adresse="/Projet/RO203/towers"
+
 """
 Generate a n*n grid
 Argument
@@ -129,10 +132,10 @@ Remark: a grid is generated only if the corresponding output file does not alrea
 function generateDataSet()
 	cwd=pwd()
     # For each grid size considered
-    for size in [5,6,7,8]
+    for size in [5,6,7,8,12]
 		# Generate 10 instances
 		for i in 1:10
-			fileName = cwd*"/RO203/towers/data/instance_t"*string(size)*"_"*string(i)*".txt"
+			fileName = cwd*adresse*"/data/instance_t"*string(size)*"_"*string(i)*".txt"
 			if !isfile(fileName)
 				println("-- Generating file "*fileName)
 				up,down,left,right = generateVectors(generateGrid(size))
