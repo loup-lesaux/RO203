@@ -5,7 +5,7 @@ include("generation.jl")
 include("io.jl")
 
 cwd=pwd()
-adresse="/Projet/RO203/towers"
+adresse="/RO203/towers"
 
 TOL = 0.00001
 
@@ -17,7 +17,10 @@ Arguments:
 """
 
 function cplexSolve(up,down,left,right)
+
+    #Acquérir la dimension du problème
     n = size(up, 1)
+<<<<<<< HEAD
     #Create the model
     m = Model(CPLEX.Optimizer)
     #Start a chronometer
@@ -90,6 +93,99 @@ function cplexSolve(up,down,left,right)
     #1 - the value of xk
     #2 - true if an optimum is found
     #3 - the resolution time
+=======
+
+    #Créer le modèle et lancer le chronomètre
+    m = Model(CPLEX.Optimizer)
+    start = time()
+
+    #####################################################################################
+    ######################## DEFINITION  VARIABLES ######################################
+    #####################################################################################
+
+    #Présence
+
+    #xk[i, j, k] = 1 si la tour de hauteur k est dans la case (i, j)
+    #            = 0 sinon
+
+    @variable(m, xk[1:n, 1:n, 1:n], Bin)
+
+    #Visibilité
+
+    #UP
+
+    #yu[i, j]    = 1 si la tour contenue dans la case (i, j) est visible depuis up
+    #            = 0 sinon
+    @variable(m, yu[1:n, 1:n], Bin)
+
+    #LEFT
+
+    #yl[i, j]    = 1 si la tour contenue dans la case (i, j) est visible depuis left
+    #            = 0 sinon
+    @variable(m, yl[1:n, 1:n], Bin)
+
+    #RIGHT
+
+    #yr[i, j]    = 1 si la tour contenue dans la case (i, j) est visible depuis right
+    #            = 0 sinon
+    @variable(m, yr[1:n, 1:n], Bin)
+
+    #DOWN
+
+    #yd[i, j]    = 1 si la tour contenue dans la case (i, j) est visible depuis down
+    #            = 0 sinon
+    @variable(m, yd[1:n, 1:n], Bin)
+
+    #####################################################################################
+    ######################## CONTRAINTES DE BASES #######################################
+    #####################################################################################
+
+    # Sur une colonne les tours sont toutes de hauteurs différentes :
+    @constraint(m, [k in 1:n, l in 1:n], sum(xk[l, j, k] for j in 1:n) == 1)
+
+    # Sur une ligne les tours sont toutes de hauteurs différentes :
+    @constraint(m, [k in 1:n, c in 1:n], sum(xk[i, c, k] for i in 1:n) == 1)
+
+    # Chaque case doit contenir une tour :
+    @constraint(m, [i in 1:n, j in 1:n], sum(xk[i, j, k] for k in 1:n) == 1)
+
+    #####################################################################################
+    ######################## CONTRAINTES VISIBILITE #####################################
+    #####################################################################################
+
+
+    # UP
+    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], yu[i,j]<=1-sum(xk[l,j,kp] for l in 1:i-1 for kp in k:n)/n+1-xk[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yu[i,j]>=1-sum(xk[l,j,kp] for l in 1:i-1 for kp in k:n)-n*(1-xk[i,j,k]))
+    @constraint(m, [j in 1:n],sum(yu[i, j] for i in 1:n) == up[j])
+
+    # LEFT
+    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], yl[i,j]<=1-sum(xk[i,c,kp] for c in 1:j-1 for kp in k:n)/n+1-xk[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yl[i,j]>=1-sum(xk[i,c,kp] for c in 1:j-1 for kp in k:n)-n*(1-xk[i,j,k]))
+	@constraint(m, [i in 1:n],sum(yl[i, j] for j in 1:n) == left[i])
+
+    # DOWN
+    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], yd[i,j]<=1-sum(xk[l,j,kp] for l in i+1:n for kp in k:n)/n+1-xk[i,j,k])
+    @constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yd[i,j]>=1-sum(xk[l,j,kp] for l in i+1:n for kp in k:n)-n*(1-xk[i,j,k]))
+    @constraint(m, [j in 1:n],sum(yd[i, j] for i in 1:n) == down[j])
+
+    # RIGHT
+    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], yr[i,j]<=1-sum(xk[i,c,kp] for c in j+1:n for kp in k:n)/n+1-xk[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yr[i,j]>=1-sum(xk[i,c,kp] for c in j+1:n for kp in k:n)-n*(1-xk[i,j,k]))
+    @constraint(m, [i in 1:n],sum(yr[i, j] for j in 1:n) == right[i])
+
+
+    #####################################################################################
+    ######################## DEFINITION  OBJECTIF #######################################
+    #####################################################################################
+
+    @objective(m, Max, sum(xk[1, 1, k] for k in 1:n))
+
+    # Résoudre le model
+    optimize!(m)
+
+    # On renvoit la valeur de xk, un booléen indiquant si l'optimum est atteint, le temps de résolution
+>>>>>>> cf070f12b137f35b910b288521edb84018f821a8
     return xk, JuMP.primal_status(m) == JuMP.MOI.FEASIBLE_POINT, time() - start
 end
 
@@ -155,7 +251,8 @@ function solveDataSet()
     end 
 end
 
-solveDataSet()
+#solveDataSet()
+
 
 ########################################################################################################################
 #####Tests 
@@ -183,9 +280,10 @@ solveDataSet()
 #     close(fout)
 # end
 
-# x,a,b=cplexSolve([2,1],[1,2],[2,1],[1,2])
-# cwd=pwd()
-# outputFile=cwd*"/Projet/RO203/towers/res/test.txt"
-# fout = open(outputFile, "w") 
-# writeSolution(fout,x)
-# println(a)
+up,down,left,right=readInputFile(cwd*adresse*"/data/instance_t5_1.txt")
+x,a,b=cplexSolve(up,down,left,right)
+outputFile=cwd*"/RO203/towers/res/test.txt"
+
+fout = open(outputFile, "w") 
+writeSolution(fout,x,up,down,left,right)
+
