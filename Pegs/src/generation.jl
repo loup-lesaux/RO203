@@ -49,11 +49,11 @@ function saveInstance(grid::Array{Int64, 2}, outputFile::String)
         for j in 1:n
             # Write its value
             if grid[i,j]==0
-                print(writer,"o")
+                print(writer,"o,")
             elseif grid[i,j]==1
-                print(writer, "x")
+                print(writer, "x,")
             else
-                print(writer, " ")
+                print(writer, " ,")
             end
             if j==n
                 println(writer,"")
@@ -77,7 +77,7 @@ function generateDataSet(types::Array{String, 1})
     for type in types
         if type=="croix"
             # Generate 10 instances
-            for size in [5,7,9,11,13,15]
+            for size in [5]
                 fileName = cwd*adresse*"/data/instance_croix_"*string(size)*".txt"
                 if !isfile(fileName)
                     println("-- Generating file "*fileName)

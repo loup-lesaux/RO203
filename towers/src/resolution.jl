@@ -5,7 +5,7 @@ include("generation.jl")
 include("io.jl")
 
 cwd=pwd()
-adresse="/RO203/towers"
+adresse="/Projet/RO203/towers"
 
 TOL = 0.00001
 
@@ -20,80 +20,6 @@ function cplexSolve(up,down,left,right)
 
     #Acquérir la dimension du problème
     n = size(up, 1)
-<<<<<<< HEAD
-    #Create the model
-    m = Model(CPLEX.Optimizer)
-    #Start a chronometer
-    start = time()
-
-    #xk[i, j, k] = 1 if cell (i, j) has value k
-    @variable(m, xk[1:n, 1:n, 1:n], Bin)
-
-    #Visibility
-    #left[i, j] = 1 if cell(i, j) is visible from left side
-    @variable(m, l[1:n, 1:n], Bin)
-    #right[i, j] = 1 if cell(i, j) is visible from right side
-    @variable(m, r[1:n, 1:n], Bin)
-    #up[i, j] = 1 if cell(i, j) is visible from up side
-    @variable(m, u[1:n, 1:n], Bin)
-    #down[i, j] = 1 if cell(i, j) is visible from down side
-    @variable(m, d[1:n, 1:n], Bin)
-
-    #Each cell (i, j) has one value k
-    @constraint(m, [i in 1:n, j in 1:n], sum(xk[i, j, k] for k in 1:n) == 1)
-
-    #Each line l has one cell with value k
-    @constraint(m, [k in 1:n, l in 1:n], sum(xk[l, j, k] for j in 1:n) == 1)
-
-    #Each column c has one cell with value k
-    @constraint(m, [k in 1:n, c in 1:n], sum(xk[i, c, k] for i in 1:n) == 1)
-
-    #Up visibility constraint
-    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], u[i,j]<=1-sum(xk[l,j,kp] for l in 1:i-1 for kp in k:n)/n+1-xk[i,j,k])
-    @constraint(m, [i in 1:n ,j in 1:n, k in 1:n], u[i,j]>=1-sum(xk[l,j,kp] for l in 1:i-1 for kp in k:n)-n*(1-xk[i,j,k]))
-    for visibility in 1:n
-        if up[visibility] != 0
-            @constraint(m, sum(u[j, visibility] for j in 1:n) == up[visibility])
-        end
-    end
-      
-    #Down visibility constraint
-    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], d[i,j]<=1-sum(xk[l,j,kp] for l in i+1:n for kp in k:n)/n+1-xk[i,j,k])
-    @constraint(m, [i in 1:n ,j in 1:n, k in 1:n], d[i,j]>=1-sum(xk[l,j,kp] for l in i+1:n for kp in k:n)-n*(1-xk[i,j,k])) 
-    for visibility in 1:n
-        if down[visibility] != 0
-            @constraint(m, sum(d[j, visibility] for j in 1:n) == down[visibility])
-        end
-    end
-      
-    #Left visible constraint
-    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], l[i,j]<=1-sum(xk[i,c,kp] for c in 1:j-1 for kp in k:n)/n+1-xk[i,j,k])
-	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], l[i,j]>=1-sum(xk[i,c,kp] for c in 1:j-1 for kp in k:n)-n*(1-xk[i,j,k]))
-	for visibility in 1:n
-        if left[visibility] != 0
-            @constraint(m, sum(l[visibility, j] for j in 1:n) == left[visibility])
-        end
-    end
-
-    #Right visible constraint
-    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], r[i,j]<=1-sum(xk[i,c,kp] for c in j+1:n for kp in k:n)/n+1-xk[i,j,k])
-	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], r[i,j]>=1-sum(xk[i,c,kp] for c in j+1:n for kp in k:n)-n*(1-xk[i,j,k]))
-    for visibility in 1:n
-        if right[visibility] != 0
-            @constraint(m, sum(r[visibility, j] for j in 1:n) == right[visibility])
-        end
-    end
-
-    #Maximize the top-left cell (reduce the problem symmetry)
-    @objective(m, Max, sum(xk[1, 1, k] for k in 1:n))
-    #Solve the model
-    optimize!(m)
-
-    #Return:
-    #1 - the value of xk
-    #2 - true if an optimum is found
-    #3 - the resolution time
-=======
 
     #Créer le modèle et lancer le chronomètre
     m = Model(CPLEX.Optimizer)
@@ -185,7 +111,6 @@ function cplexSolve(up,down,left,right)
     optimize!(m)
 
     # On renvoit la valeur de xk, un booléen indiquant si l'optimum est atteint, le temps de résolution
->>>>>>> cf070f12b137f35b910b288521edb84018f821a8
     return xk, JuMP.primal_status(m) == JuMP.MOI.FEASIBLE_POINT, time() - start
 end
 
@@ -251,7 +176,7 @@ function solveDataSet()
     end 
 end
 
-#solveDataSet()
+solveDataSet()
 
 
 ########################################################################################################################
@@ -280,10 +205,9 @@ end
 #     close(fout)
 # end
 
-up,down,left,right=readInputFile(cwd*adresse*"/data/instance_t5_1.txt")
-x,a,b=cplexSolve(up,down,left,right)
-outputFile=cwd*"/RO203/towers/res/test.txt"
-
-fout = open(outputFile, "w") 
-writeSolution(fout,x,up,down,left,right)
+# up,down,left,right=readInputFile(cwd*adresse*"/data/instance_t5_1.txt")
+# x,a,b=cplexSolve(up,down,left,right)
+# outputFile=cwd*"/RO203/towers/res/test.txt"
+# fout = open(outputFile, "w") 
+# writeSolution(fout,x,up,down,left,right)
 

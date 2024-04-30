@@ -4,7 +4,7 @@ using Plots
 import .GR
 
 cwd=pwd()
-adresse="/RO203/towers"
+adresse="/Projet/RO203/towers"
 
 """
 Read an instance from an input file

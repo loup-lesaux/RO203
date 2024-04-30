@@ -1,5 +1,5 @@
- xxx 
-xxxxx
-xxoxx
-xxxxx
- xxx 
+ ,x,x,x, ,
+x,x,x,x,x,
+x,x,o,x,x,
+x,x,x,x,x,
+ ,x,x,x, ,

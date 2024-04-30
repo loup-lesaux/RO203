@@ -6,6 +6,9 @@ include("io.jl")
 
 TOL = 0.00001
 
+cwd=pwd()
+adresse="/Projet/RO203/pegs"
+
 """
 Solve an instance with CPLEX
 """
@@ -66,7 +69,7 @@ function cplexSolve(G::Matrix{Int})
 
     #L’objectif est de minimiser le nombre de pions sur la grille à l’étape n :
 
-    @objective(model, Min, sum(x[i,j,n] for i in 2:m-2 for j in 2:m-2)) 
+    @objective(model, Min, sum(x[i,j,n] for i in 1:m for j in 1:m)) 
 
 
     #####################################################################################
@@ -178,9 +181,6 @@ function cplexSolve(G::Matrix{Int})
                         res[i-2, j-2, t] = 0
                     elseif value.(x[i,j,t]) == 1
                         res[i-2, j-2, t] = 1
-                        if t == n
-                            ls += 1
-                        end
                     end
                 end
             end
@@ -497,9 +497,6 @@ function heuristicSolve(G::Matrix{Int})
 
 end
 
-
-
-
 function heuristicSolve_wp(G::Matrix{Int})
 
     leng = size(G, 1) #On récupère la taille de la grille initiale
@@ -534,8 +531,6 @@ function heuristicSolve_wp(G::Matrix{Int})
 
 end
 
-
-
 function heuristicSolve_random(G::Matrix{Int})
 
     leng = size(G, 1) #On récupère la taille de la grille initiale
@@ -566,13 +561,9 @@ function heuristicSolve_random(G::Matrix{Int})
         t += 1
     end
 
-    return H, t
+    return H
 
 end
-
-
-
-
 
 function heuristicSolve_distance_max(G::Matrix{Int})
 
@@ -604,7 +595,7 @@ function heuristicSolve_distance_max(G::Matrix{Int})
         t += 1
     end
 
-    return H, t
+    return H
 
 end
 
@@ -639,7 +630,7 @@ function heuristicSolve_distance_min(G::Matrix{Int})
         t += 1
     end
 
-    return H, t
+    return H
 
 end
 
@@ -674,7 +665,7 @@ function heuristicSolve_closer_to_center(G::Matrix{Int})
         t += 1
     end
 
-    return H, t
+    return H
 
 end
 
@@ -690,114 +681,95 @@ end
 
 function solveDataSet()
     cwd=pwd()
-    dataFolder = cwd*"/RO203/Pegs/data/"
-    resFolder = cwd*"/RO203/Pegs/res/"
-
-    # Array which contains the name of the resolution methods
+    dataFolder = cwd*adresse*"/data/"
+    resFolder = cwd*adresse*"/res/"
+    #Array which contains the name of the resolution methods
     resolutionMethod = ["cplex","heuristique_agglo","heuristique_agglo_wp","heuristique_random","heuristique_closer_to_center"]
-
-    # Array which contains the result folder of each resolution method
+    
+    #Array which contains the result folder of each resolution method
     resolutionFolder = resFolder .* resolutionMethod
-
-    # Create each result folder if it does not exist
+    #Create each result folder if it does not exist
     for folder in resolutionFolder
         if !isdir(folder)
             mkdir(folder)
         end
-    end
-            
+    end 
     global isOptimal = false
     global solveTime = -1
-
-
-    # For each instance
-    # (for each file in folder dataFolder which ends by ".txt")
+    #For each instance
+    #(for each file in folder dataFolder which ends by ".txt")
     for file in filter(x->occursin(".txt", x), readdir(dataFolder)) 
         println("-- Resolution of ", file)
-
-        G= readInputFile(dataFolder * file)
-
-        # For each resolution method
-        for methodId in 1:size(resolutionMethod, 1)
-            
+        G = readInputFile(dataFolder * file)
+        n =size(resolutionMethod, 1)
+        #For each resolution method
+        for methodId in 1:n
             outputFile = resolutionFolder[methodId] * "/" * file
-
-            # If the instance has not already been solved by this method
-            if !isfile(outputFile)
-                
-                fout = open(outputFile, "w")  
-
+            #If the instance has not already been solved by this method
+            if !isfile(outputFile) 
+                fout = open(outputFile, "w")
                 resolutionTime = -1
                 isOptimal = false
-                
                 # If the method is cplex
                 if resolutionMethod[methodId] == "cplex"
                     println("resolutionMethod[methodId] == cplex")                  
-                    
                     # Solve it and get the results
-                    fin, isOptimal, resolutionTime = cplexSolve(G)
+                    H, isOptimal, resolutionTime = cplexSolve(G)
                     # If a solution is found, write it
-                    if isOptimal
-                        writeSolution(fin)
-                    end
-                
+                    #writeSolution(H)
                 # If the method is the heuristic agglo
                 elseif resolutionMethod[methodId] == "heuristique_agglo"
                     isSolved = false
-
                     # Start a chronometer 
                     resolutionTime = time()
-                    
                     # While the grid is not solved and less than 100 seconds are elapsed
                     while !isOptimal && resolutionTime < 100
-
                         # Solve it and get the results
                         H = heuristicSolve(G)
-
-                        
-
                         # Stop the chronometer
                         resolutionTime = time() - resolutionTime
-                        
                     end
-
                     # Write the solution (if any)
-                    if isOptimal
-
-                        # TODO
-                        println("In file resolution.jl, in method solveDataSet(), TODO: write the heuristic solution in fout")
-                        
-                    end 
-
-                # If the method is one of the heuristics
-                else
-                    
+                    #writeSolution(fout,H)
+                elseif resolutionMethod[methodId] == "heuristique_agglo_wp"
                     isSolved = false
-
                     # Start a chronometer 
-                    startingTime = time()
-                    
+                    resolutionTime = time()
                     # While the grid is not solved and less than 100 seconds are elapsed
                     while !isOptimal && resolutionTime < 100
-                        
-                        # TODO 
-                        println("In file resolution.jl, in method solveDataSet(), TODO: fix heuristicSolve() arguments and returned values")
-                        
                         # Solve it and get the results
-                        isOptimal, resolutionTime = heuristicSolve()
-
+                        H = heuristicSolve_wp(G)
                         # Stop the chronometer
-                        resolutionTime = time() - startingTime
-                        
+                        resolutionTime = time() - resolutionTime
                     end
-
                     # Write the solution (if any)
-                    if isOptimal
-
-                        # TODO
-                        println("In file resolution.jl, in method solveDataSet(), TODO: write the heuristic solution in fout")
-                        
-                    end 
+                    #writeSolution(fout,H)
+                elseif resolutionMethod[methodId] == "heuristique_random"
+                    isSolved = false
+                    # Start a chronometer 
+                    resolutionTime = time()
+                    # While the grid is not solved and less than 100 seconds are elapsed
+                    while !isOptimal && resolutionTime < 100
+                        # Solve it and get the results
+                        H = heuristicSolve_random(G)
+                        # Stop the chronometer
+                        resolutionTime = time() - resolutionTime
+                    end
+                    # Write the solution (if any)
+                    #writeSolution(fout,H)
+                elseif resolutionMethod[methodId] == "heuristique_closer_to_center"
+                    isSolved = false
+                    # Start a chronometer 
+                    resolutionTime = time()
+                    # While the grid is not solved and less than 100 seconds are elapsed
+                    while !isOptimal && resolutionTime < 100
+                        # Solve it and get the results
+                        H = heuristicSolve_closer_to_center(G)
+                        # Stop the chronometer
+                        resolutionTime = time() - resolutionTime
+                    end
+                    # Write the solution (if any)
+                    #writeSolution(fout,H)
                 end
                 println(fout, "solveTime = ", resolutionTime) 
                 println(fout, "isOptimal = ", isOptimal)
@@ -807,15 +779,11 @@ function solveDataSet()
             # include(outputFile)
             println(resolutionMethod[methodId], " optimal: ", isOptimal)
             println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
-        end         
+        end
     end 
 end
 
-
-
-
-
-
+solveDataSet()
 
 ####################      Test unitaires des fonctions      ###################
 
@@ -913,5 +881,3 @@ G = create_basic_board()
 # print_basic_board(D)
 #println(G)
 
-B,t,d,a=cplexSolve(G);
-solveDataSet()
