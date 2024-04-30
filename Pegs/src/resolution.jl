@@ -160,10 +160,7 @@ function cplexSolve(G::Matrix{Int})
     #Création d'une matrice res de dimensions n x (m - 4) x (m - 4) remplie initialement de 0.
 
     res = fill(0, m - 4, m - 4, n) 
-
-    #Cette variable sera utilisée pour compter le nombre de pions dans la dernière étape du processus de résolution
-
-    ls = 0
+    fin = fill(0,m-4,m-4)
 
     #Si le modèle a trouvé une solution admissible, le code retourne la matrice res arrondie en entiers,
     #la valeur de n et un booléen indiquant si le nombre de pions dans la dernière étape est égal à 1.
@@ -190,11 +187,10 @@ function cplexSolve(G::Matrix{Int})
         end
         for i in 3:m-2
             for j in 3:m-2
-                print(res[i-2,j-2,n])
+                fin[i-2,j-2]=res[i-2,j-2,n]
             end
-            println()
         end
-        return round.(Int, res), n, ls == 1,time() - start
+        return fin, primal_status(model) == MOI.FEASIBLE_POINT,time() - start
     else
         println("Aucune solution trouvée.")
         return -1
@@ -497,7 +493,7 @@ function heuristicSolve(G::Matrix{Int})
         t += 1
     end
 
-    return H, t
+    return H
 
 end
 
@@ -534,7 +530,7 @@ function heuristicSolve_wp(G::Matrix{Int})
         t += 1
     end
 
-    return H, t
+    return H
 
 end
 
@@ -698,7 +694,7 @@ function solveDataSet()
     resFolder = cwd*"/RO203/Pegs/res/"
 
     # Array which contains the name of the resolution methods
-    resolutionMethod = ["cplex", "heuristique_agglo","heuristique_agglo_wp","heuristique_random","heuristique_closer_to_center"]
+    resolutionMethod = ["cplex","heuristique_agglo","heuristique_agglo_wp","heuristique_random","heuristique_closer_to_center"]
 
     # Array which contains the result folder of each resolution method
     resolutionFolder = resFolder .* resolutionMethod
@@ -719,7 +715,7 @@ function solveDataSet()
     for file in filter(x->occursin(".txt", x), readdir(dataFolder)) 
         println("-- Resolution of ", file)
 
-        #G= readInputFile(dataFolder * file)
+        G= readInputFile(dataFolder * file)
 
         # For each resolution method
         for methodId in 1:size(resolutionMethod, 1)
@@ -739,11 +735,39 @@ function solveDataSet()
                     println("resolutionMethod[methodId] == cplex")                  
                     
                     # Solve it and get the results
-                    x,isOptimal, resolutionTime = cplexSolve(up,down,left,right)
+                    fin, isOptimal, resolutionTime = cplexSolve(G)
                     # If a solution is found, write it
                     if isOptimal
-                        writeSolution(fout,x,up,down,left,right)
+                        writeSolution(fin)
                     end
+                
+                # If the method is the heuristic agglo
+                elseif resolutionMethod[methodId] == "heuristique_agglo"
+                    isSolved = false
+
+                    # Start a chronometer 
+                    resolutionTime = time()
+                    
+                    # While the grid is not solved and less than 100 seconds are elapsed
+                    while !isOptimal && resolutionTime < 100
+
+                        # Solve it and get the results
+                        H = heuristicSolve(G)
+
+                        
+
+                        # Stop the chronometer
+                        resolutionTime = time() - resolutionTime
+                        
+                    end
+
+                    # Write the solution (if any)
+                    if isOptimal
+
+                        # TODO
+                        println("In file resolution.jl, in method solveDataSet(), TODO: write the heuristic solution in fout")
+                        
+                    end 
 
                 # If the method is one of the heuristics
                 else

@@ -5,7 +5,7 @@ include("generation.jl")
 include("io.jl")
 
 cwd=pwd()
-adresse="/Projet/RO203/towers"
+adresse="/RO203/towers"
 
 TOL = 0.00001
 
@@ -13,81 +13,100 @@ TOL = 0.00001
 Solve an instance with CPLEX
 """
 function cplexSolve(up,down,left,right)
+
+    #Acquérir la dimension du problème
     n = size(up, 1)
-    # Create the model
+
+    #Créer le modèle et lancer le chronomètre
     m = Model(CPLEX.Optimizer)
-    # Start a chronometer
     start = time()
 
-    # xk[i, j, k] = 1 if cell (i, j) has value k
+    #####################################################################################
+    ######################## DEFINITION  VARIABLES ######################################
+    #####################################################################################
+
+    #Présence
+
+    #xk[i, j, k] = 1 si la tour de hauteur k est dans la case (i, j)
+    #            = 0 sinon
+
     @variable(m, xk[1:n, 1:n, 1:n], Bin)
 
-    # Visibility
-    # left[i, j] = 1 if cell(i, j) is visible from left side
-    @variable(m, l[1:n, 1:n], Bin)
-    # right[i, j] = 1 if cell(i, j) is visible from right side
-    @variable(m, r[1:n, 1:n], Bin)
-    # up[i, j] = 1 if cell(i, j) is visible from up side
-    @variable(m, u[1:n, 1:n], Bin)
-    # down[i, j] = 1 if cell(i, j) is visible from down side
-    @variable(m, d[1:n, 1:n], Bin)
+    #Visibilité
 
-    # Each cell (i, j) has one value k
-    @constraint(m, [i in 1:n, j in 1:n], sum(xk[i, j, k] for k in 1:n) == 1)
+    #UP
 
-    # Each line l has one cell with value k
+    #yu[i, j]    = 1 si la tour contenue dans la case (i, j) est visible depuis up
+    #            = 0 sinon
+    @variable(m, yu[1:n, 1:n], Bin)
+
+    #LEFT
+
+    #yl[i, j]    = 1 si la tour contenue dans la case (i, j) est visible depuis left
+    #            = 0 sinon
+    @variable(m, yl[1:n, 1:n], Bin)
+
+    #RIGHT
+
+    #yr[i, j]    = 1 si la tour contenue dans la case (i, j) est visible depuis right
+    #            = 0 sinon
+    @variable(m, yr[1:n, 1:n], Bin)
+
+    #DOWN
+
+    #yd[i, j]    = 1 si la tour contenue dans la case (i, j) est visible depuis down
+    #            = 0 sinon
+    @variable(m, yd[1:n, 1:n], Bin)
+
+    #####################################################################################
+    ######################## CONTRAINTES DE BASES #######################################
+    #####################################################################################
+
+    # Sur une colonne les tours sont toutes de hauteurs différentes :
     @constraint(m, [k in 1:n, l in 1:n], sum(xk[l, j, k] for j in 1:n) == 1)
 
-    # Each column c has one cell with value k
+    # Sur une ligne les tours sont toutes de hauteurs différentes :
     @constraint(m, [k in 1:n, c in 1:n], sum(xk[i, c, k] for i in 1:n) == 1)
 
+    # Chaque case doit contenir une tour :
+    @constraint(m, [i in 1:n, j in 1:n], sum(xk[i, j, k] for k in 1:n) == 1)
 
-    # Left visible constraint
-    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], l[i,j]<=1-sum(xk[i,c,kp] for c in 1:j-1 for kp in k:n)/n+1-xk[i,j,k])
-	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], l[i,j]>=1-sum(xk[i,c,kp] for c in 1:j-1 for kp in k:n)-n*(1-xk[i,j,k]))
-	for lineV in 1:n
-        if left[lineV] != 0
-            @constraint(m, sum(l[lineV, j] for j in 1:n) == left[lineV])
-        end
-    end
+    #####################################################################################
+    ######################## CONTRAINTES VISIBILITE #####################################
+    #####################################################################################
 
-    # Right visible constraint
-    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], r[i,j]<=1-sum(xk[i,c,kp] for c in j+1:n for kp in k:n)/n+1-xk[i,j,k])
-	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], r[i,j]>=1-sum(xk[i,c,kp] for c in j+1:n for kp in k:n)-n*(1-xk[i,j,k]))
-    for lineV in 1:n
-        if right[lineV] != 0
-            @constraint(m, sum(r[lineV, j] for j in 1:n) == right[lineV])
-        end
-    end
 
-    # Up visibility constraint
-    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], u[i,j]<=1-sum(xk[l,j,kp] for l in 1:i-1 for kp in k:n)/n+1-xk[i,j,k])
-	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], u[i,j]>=1-sum(xk[l,j,kp] for l in 1:i-1 for kp in k:n)-n*(1-xk[i,j,k]))
-    for lineV in 1:n
-        if up[lineV] != 0
-            @constraint(m, sum(u[j, lineV] for j in 1:n) == up[lineV])
-        end
-    end
+    # UP
+    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], yu[i,j]<=1-sum(xk[l,j,kp] for l in 1:i-1 for kp in k:n)/n+1-xk[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yu[i,j]>=1-sum(xk[l,j,kp] for l in 1:i-1 for kp in k:n)-n*(1-xk[i,j,k]))
+    @constraint(m, [j in 1:n],sum(yu[i, j] for i in 1:n) == up[j])
 
-    # Down visibility constraint
-    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], d[i,j]<=1-sum(xk[l,j,kp] for l in i+1:n for kp in k:n)/n+1-xk[i,j,k])
-	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], d[i,j]>=1-sum(xk[l,j,kp] for l in i+1:n for kp in k:n)-n*(1-xk[i,j,k]))
-    
-    for lineV in 1:n
-        if down[lineV] != 0
-            @constraint(m, sum(d[j, lineV] for j in 1:n) == down[lineV])
-        end
-    end
+    # LEFT
+    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], yl[i,j]<=1-sum(xk[i,c,kp] for c in 1:j-1 for kp in k:n)/n+1-xk[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yl[i,j]>=1-sum(xk[i,c,kp] for c in 1:j-1 for kp in k:n)-n*(1-xk[i,j,k]))
+	@constraint(m, [i in 1:n],sum(yl[i, j] for j in 1:n) == left[i])
 
-    # Maximize the top-left cell (reduce the problem symmetry)
+    # DOWN
+    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], yd[i,j]<=1-sum(xk[l,j,kp] for l in i+1:n for kp in k:n)/n+1-xk[i,j,k])
+    @constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yd[i,j]>=1-sum(xk[l,j,kp] for l in i+1:n for kp in k:n)-n*(1-xk[i,j,k]))
+    @constraint(m, [j in 1:n],sum(yd[i, j] for i in 1:n) == down[j])
+
+    # RIGHT
+    @constraint(m, [i in 1:n, j in 1:n, k in 1:n], yr[i,j]<=1-sum(xk[i,c,kp] for c in j+1:n for kp in k:n)/n+1-xk[i,j,k])
+	@constraint(m, [i in 1:n ,j in 1:n, k in 1:n], yr[i,j]>=1-sum(xk[i,c,kp] for c in j+1:n for kp in k:n)-n*(1-xk[i,j,k]))
+    @constraint(m, [i in 1:n],sum(yr[i, j] for j in 1:n) == right[i])
+
+
+    #####################################################################################
+    ######################## DEFINITION  OBJECTIF #######################################
+    #####################################################################################
+
     @objective(m, Max, sum(xk[1, 1, k] for k in 1:n))
-    # Solve the model
+
+    # Résoudre le model
     optimize!(m)
 
-    # Return:
-    # 1 - the value of xk
-    # 2 - true if an optimum is found
-    # 3 - the resolution time
+    # On renvoit la valeur de xk, un booléen indiquant si l'optimum est atteint, le temps de résolution
     return xk, JuMP.primal_status(m) == JuMP.MOI.FEASIBLE_POINT, time() - start
 end
 
@@ -194,7 +213,8 @@ function solveDataSet()
     end 
 end
 
-solveDataSet()
+#solveDataSet()
+
 
 ########################################################################################################################
 #####Tests 
@@ -222,9 +242,10 @@ solveDataSet()
 #     close(fout)
 # end
 
-# x,a,b=cplexSolve([2,1],[1,2],[2,1],[1,2])
-# cwd=pwd()
-# outputFile=cwd*"/Projet/RO203/towers/res/test.txt"
-# fout = open(outputFile, "w") 
-# writeSolution(fout,x)
-# println(a)
+up,down,left,right=readInputFile(cwd*adresse*"/data/instance_t5_1.txt")
+x,a,b=cplexSolve(up,down,left,right)
+outputFile=cwd*"/RO203/towers/res/test.txt"
+
+fout = open(outputFile, "w") 
+writeSolution(fout,x,up,down,left,right)
+

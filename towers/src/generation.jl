@@ -2,7 +2,7 @@
 include("io.jl")
 
 cwd=pwd()
-adresse="/Projet/RO203/towers"
+adresse="/RO203/towers"
 
 """
 Generate a n*n grid
