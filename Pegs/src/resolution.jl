@@ -9,6 +9,7 @@ TOL = 0.00001
 """
 Solve an instance with CPLEX
 """
+
 function cplexSolve(G::Matrix{Int})
 
     leng=size(G,1)
@@ -24,8 +25,6 @@ function cplexSolve(G::Matrix{Int})
         end
     end
 
-    println("Nombre d'étapes requises pour retirer tous les pions sauf le dernier : ", n)
-
     model = Model(CPLEX.Optimizer)
 
     #####################################################################################
@@ -38,27 +37,26 @@ function cplexSolve(G::Matrix{Int})
     #1 si un pion est présent dans la case (i, j) à l’étape t
     #0 si la case (i, j) ne contient pas de pion à l’étape t
 
-    #Déplacement au nord
 
-    @variable(model, y[1:m, 1:m, 1:n, 1], Bin)
+    @variable(model, y[1:m, 1:m, 1:n, 1:4], Bin)
+
+    #Déplacement au nord y[i,j,t,1]
+
     #1 si le pion présent en (i, j) peut entamer un déplacement vers la case (i − 2, j)
     #0 sinon
 
-    #Déplacement au sud
+    #Déplacement au sud y[i,j,t,2]
 
-    @variable(model, y[1:m, 1:m, 1:n, 2], Bin)
     #1 si le pion présent en (i, j) peut entamer un déplacement vers la case (i + 2, j)
     #0 sinon
 
-    #Déplacement à l'ouest
+    #Déplacement à l'ouest y[i,j,t,3]
 
-    @variable(model, y[1:m, 1:m, 1:n, 3], Bin)
     #1 si le pion présent en (i, j) peut entamer un déplacement vers la case (i, j-2)
     #0 sinon
 
-    #Déplacement à l'est
+    #Déplacement à l'est y[i,j,t,4]
 
-    @variable(model, y[1:m, 1:m, 1:n, 4], Bin)
     #1 si le pion présent en (i, j) peut entamer un déplacement vers la case (i,j + 2)
     #0 sinon
 
@@ -68,7 +66,7 @@ function cplexSolve(G::Matrix{Int})
 
     #L’objectif est de minimiser le nombre de pions sur la grille à l’étape n :
 
-    @objective(model, Min, sum(x[i,j,n] for i in 1:m for j in 1:m)) 
+    @objective(model, Min, sum(x[i,j,n] for i in 2:m-2 for j in 2:m-2)) 
 
 
     #####################################################################################
@@ -156,6 +154,7 @@ function cplexSolve(G::Matrix{Int})
 
     set_optimizer_attribute(model, "CPXPARAM_TimeLimit", 300) # 5 minutes de time limit
     set_silent(model)
+    start = time()
     optimize!(model)
 
     #Création d'une matrice res de dimensions n x (m - 4) x (m - 4) remplie initialement de 0.
@@ -170,6 +169,7 @@ function cplexSolve(G::Matrix{Int})
     #la valeur de n et un booléen indiquant si le nombre de pions dans la dernière étape est égal à 1.
     #Sinon, s'il n'y a pas de solution réalisable, le code affiche un message indiquant qu'aucune solution
     #n'a été trouvée et retourne -1.
+
 
     if primal_status(model) == MOI.FEASIBLE_POINT
         for t in 1:n
@@ -188,12 +188,17 @@ function cplexSolve(G::Matrix{Int})
                 end
             end
         end
-        return round.(Int, res), n, ls == 1
+        for i in 3:m-2
+            for j in 3:m-2
+                print(res[i-2,j-2,n])
+            end
+            println()
+        end
+        return round.(Int, res), n, ls == 1,time() - start
     else
         println("Aucune solution trouvée.")
         return -1
     end
-
 end
 
 
@@ -416,6 +421,43 @@ function index_minimizing_distance_to_center(G::Matrix{Int}, L::Any)
     return index
 end
 
+function index_closer_to_center(G::Matrix{Int}, L::Any)
+
+    A=[] #top left corner
+    B=[] #top right corner
+    C=[] #bottom left corner
+    D=[] #bottom right corner
+
+    c = Int(size(G,1) ÷ 2 + 1)
+
+    #création de la liste des mouvement intéressants selon le découpage en quatre zones
+    #c'est-à-dire que les mouvements qui rapprochent du centre
+
+    for x in L
+        i=x[1]
+        j=x[2]
+        d=x[3]
+        if(i<=c && j<=c &&(d=="Est"||d=="Sud"))
+            push!(A,x)
+        elseif(i<=c && j>c &&(d=="Ouest"||d=="Sud"))
+            push!(B,x)
+        elseif(i>c && j<=c &&(d=="Est"||d=="Nord"))
+            push!(C,x)
+        elseif(i>c && j>c &&(d=="Ouest"||d=="Nord"))
+            push!(D,x)
+        end
+    end
+
+    #On concatène
+
+    List_of_interest=cat(A,B,C,D,dims=1)
+
+    #On n'a plus qu'à choisir ceux minimisant la distance au centre 
+
+    return(index_minimizing_distance_to_center(G,List_of_interest))
+    
+end
+
 ################################## Fonction heuristicSolve ##########################
 
 # Prend en entrée une grille à résoudre
@@ -606,6 +648,39 @@ function heuristicSolve_distance_min(G::Matrix{Int})
 end
 
 
+function heuristicSolve_closer_to_center(G::Matrix{Int})
+
+    leng = size(G, 1) #On récupère la taille de la grille initiale
+
+    H=copy(G)
+
+    n=0 #nombre 'étapes dans la partie
+    
+    for i in 1:leng
+        for j in 1:leng
+            if G[i, j] == 1
+                n += 1
+            end
+        end
+    end
+
+    t=0 #compteur de boucle pour empêcher de boucler à l'infini
+
+    while t < n
+        L= List_of_possible_move(H)
+        #Si pas de mouvements possibles à réaliser, on stop la boucle
+        if length(L) == 0
+            break
+        else
+            k = index_closer_to_center(H,L) #indice maximisant l'agglomération des pions
+            H=Move(H,L[k])
+        end
+        t += 1
+    end
+
+    return H, t
+
+end
 
 ####################### Fonction solveDataSet #################################
 
@@ -614,6 +689,105 @@ end
 # de maximiser le nombre de billes environnantes
 
 ###############################################################################
+
+
+
+function solveDataSet()
+    cwd=pwd()
+    dataFolder = cwd*"/RO203/Pegs/data/"
+    resFolder = cwd*"/RO203/Pegs/res/"
+
+    # Array which contains the name of the resolution methods
+    resolutionMethod = ["cplex", "heuristique_agglo","heuristique_agglo_wp","heuristique_random","heuristique_closer_to_center"]
+
+    # Array which contains the result folder of each resolution method
+    resolutionFolder = resFolder .* resolutionMethod
+
+    # Create each result folder if it does not exist
+    for folder in resolutionFolder
+        if !isdir(folder)
+            mkdir(folder)
+        end
+    end
+            
+    global isOptimal = false
+    global solveTime = -1
+
+
+    # For each instance
+    # (for each file in folder dataFolder which ends by ".txt")
+    for file in filter(x->occursin(".txt", x), readdir(dataFolder)) 
+        println("-- Resolution of ", file)
+
+        #G= readInputFile(dataFolder * file)
+
+        # For each resolution method
+        for methodId in 1:size(resolutionMethod, 1)
+            
+            outputFile = resolutionFolder[methodId] * "/" * file
+
+            # If the instance has not already been solved by this method
+            if !isfile(outputFile)
+                
+                fout = open(outputFile, "w")  
+
+                resolutionTime = -1
+                isOptimal = false
+                
+                # If the method is cplex
+                if resolutionMethod[methodId] == "cplex"
+                    println("resolutionMethod[methodId] == cplex")                  
+                    
+                    # Solve it and get the results
+                    x,isOptimal, resolutionTime = cplexSolve(up,down,left,right)
+                    # If a solution is found, write it
+                    if isOptimal
+                        writeSolution(fout,x,up,down,left,right)
+                    end
+
+                # If the method is one of the heuristics
+                else
+                    
+                    isSolved = false
+
+                    # Start a chronometer 
+                    startingTime = time()
+                    
+                    # While the grid is not solved and less than 100 seconds are elapsed
+                    while !isOptimal && resolutionTime < 100
+                        
+                        # TODO 
+                        println("In file resolution.jl, in method solveDataSet(), TODO: fix heuristicSolve() arguments and returned values")
+                        
+                        # Solve it and get the results
+                        isOptimal, resolutionTime = heuristicSolve()
+
+                        # Stop the chronometer
+                        resolutionTime = time() - startingTime
+                        
+                    end
+
+                    # Write the solution (if any)
+                    if isOptimal
+
+                        # TODO
+                        println("In file resolution.jl, in method solveDataSet(), TODO: write the heuristic solution in fout")
+                        
+                    end 
+                end
+                println(fout, "solveTime = ", resolutionTime) 
+                println(fout, "isOptimal = ", isOptimal)
+                close(fout)
+            end
+            # Display the results obtained with the method on the current instance
+            # include(outputFile)
+            println(resolutionMethod[methodId], " optimal: ", isOptimal)
+            println(resolutionMethod[methodId], " time: " * string(round(solveTime, sigdigits=2)) * "s\n")
+        end         
+    end 
+end
+
+
 
 
 
@@ -677,11 +851,11 @@ end
 
 
 # Création de la matrice G représentant le plateau anglais
-println("Plateau de base :")
+#println("Plateau de base :")
 G = create_basic_board()
 
 # Affichage du plateau
-print_basic_board(G)
+#print_basic_board(G)
 
 
 # Liste des mouvements possibles
@@ -689,23 +863,31 @@ print_basic_board(G)
 
 # Test heuristicsolve
 
-H, u=heuristicSolve(G)
-A, u=heuristicSolve_wp(G)
-M, u=heuristicSolve_random(G)
-B, u=heuristicSolve_distance_max(G)
-C, u=heuristicSolve_distance_min(G)
+#H, u=heuristicSolve(G)
+#A, u=heuristicSolve_wp(G)
+#M, u=heuristicSolve_random(G)
+#B, u=heuristicSolve_distance_max(G)
+#C, u=heuristicSolve_distance_min(G)
+#D, u=heuristicSolve_closer_to_center(G)
 
-println("résolution heuristique sans pénalisation des trous :")
-print_basic_board(H)
+# println("résolution heuristique sans pénalisation des trous :")
+# print_basic_board(H)
 
-println("résolution heuristique avec pénalisation des trous :")
-print_basic_board(A)
+# println("résolution heuristique avec pénalisation des trous :")
+# print_basic_board(A)
 
-println("résolution heuristique avec choix random :")
-print_basic_board(M)
+# println("résolution heuristique avec choix random :")
+# print_basic_board(M)
 
-println("résolution heuristique avec maximisation des distances au centre :")
-print_basic_board(B)
+# println("résolution heuristique avec maximisation des distances au centre :")
+# print_basic_board(B)
 
-println("résolution heuristique avec minimisant des distances au centre :")
-print_basic_board(C)
+# println("résolution heuristique avec minimisant des distances au centre :")
+# print_basic_board(C)
+
+# println("résolution heuristique avec closer to center :")
+# print_basic_board(D)
+#println(G)
+
+B,t,d,a=cplexSolve(G);
+solveDataSet()
