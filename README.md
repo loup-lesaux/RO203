@@ -1,5 +1,5 @@
 # RO203
-A Julia Project for RO203 at ENSTA Paris
+A Julia Project for RO203 at ENSTA Paris. Loup LE SAUX et Antoine GERMAIN.
 
 For each /src file, remember to write your path from your current working directory to the towers or pegs file at the top of the file.
 
