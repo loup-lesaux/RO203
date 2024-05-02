@@ -1,11 +1,12 @@
 # This file contains functions related to reading, writing and displaying a grid and experimental results
 
 using JuMP
-using Plots
+#using Plots
 import .GR
+#using DataFrames, PlotlyJS
 
 cwd=pwd()
-adresse="/Projet/RO203/pegs"
+adresse="/Projet/RO203/Pegs"
 
 """
 Read an instance from an input file
@@ -21,7 +22,7 @@ function readInputFile(inputFile::String)
     close(datafile)
     n=length(split(data[1],","))-1
     print(n)
-    grid=Array{Int64, 2}(zeros(n, n))
+    grid=Matrix{Int64}(zeros(n, n))
     # For each line of the input file
     for line in 1:n
         lineSplit = split(data[line],",")
@@ -51,95 +52,121 @@ Prerequisites:
 - Each text file correspond to the resolution of one instance
 - Each text file contains a variable "solveTime" and a variable "isOptimal"
 """
-
-function performanceDiagram(grid::Array{Int64, 2}, outputFile::String)
-    resultFolder = cwd*adresse*"/res/"
-    maxSize=42 #Maximal number of files in a subfolder
-    subfolderCount=1 #Number of subfolders
-    folderName = Vector{String}()
-    for file in readdir(resultFolder) #For each file in the result folder
-        path = resultFolder * file
-        if isdir(path) #If it is a subfolder
-            folderName = vcat(folderName, file)
-            subfolderCount += 1
-            folderSize = size(readdir(path), 1)
-            if maxSize < folderSize
-                maxSize = folderSize
-            end
-        end
-    end
-    #Array that will contain the resolution times (one line for each subfolder)
-    results = Array{Float64}(undef, subfolderCount, maxSize)
-    for i in 1:subfolderCount
-        for j in 1:maxSize
-            results[i, j] = Inf
-        end
-    end
-    folderCount = 0
-    maxSolveTime = 0
-    #For each subfolder
-    for file in readdir(resultFolder)
-        path = resultFolder * file
-        if isdir(path)
-            folderCount += 1
-            fileCount = 0
-            #For each text file in the subfolder
-            for resultFile in filter(x->occursin(".txt", x), readdir(path))
-                fileCount += 1
-                readlines(path * "/" * resultFile)
-                solveTime=readlines(path * "/" * resultFile)[end-1][13:18]
-                #solveTime=replace(solveTime, "." => ",")
-                solveTime = parse(Float64, solveTime)
-                isOptimal = readlines(path * "/" * resultFile)[end][13:16]
-                if isOptimal == "true"
-                    results[folderCount, fileCount] = solveTime
-                    if solveTime > maxSolveTime
-                        maxSolveTime = solveTime
-                    end
-                end
-            end
-        end
-    end
-    #Sort each row increasingly
-    results = sort(results, dims=2)
-    println("Max solve time: ", maxSolveTime)
-    n=size(results,1)
-    #For each line to plot
-    for dim in 1:1
-        x = Array{Float64, 1}()
-        y = Array{Float64, 1}()
-        #x coordinate of the previous inflexion point
-        previousX = 0
-        previousY = 0
-        append!(x, previousX)
-        append!(y, previousY)
-        #Current position in the line
-        currentId = 1
-        #While the end of the line is not reached 
-        while currentId != size(results, 2) && results[dim, currentId] != Inf
-            #Number of elements which have the value previousX
-            identicalValues = 1
-             #While the value is the same
-            while results[dim, currentId] == previousX && currentId <= size(results, 2)
-                currentId += 1
-                identicalValues += 1
-            end
-            #Add the proper points
-            append!(x, previousX)
-            append!(y, currentId - 1)
-            if results[dim, currentId] != Inf
-                append!(x, results[dim, currentId])
-                append!(y, currentId - 1)
-            end
-            previousX = results[dim, currentId]
-            previousY = currentId - 1
-        end
-        append!(x, maxSolveTime)
-        append!(y, currentId - 1)
-        plot(x, y, label = folderName[dim], legend = :bottomright, xaxis = "Time (s)", yaxis = "Solved instances",linewidth=3)
-        savefig(outputFile)
-    end
-end
+##################################CETTE FONCTION EST MAUDITE, REPARTIR DE ZERO.
+# function performanceDiagram(outputFile::String)
+#     resultFolder = cwd*adresse*"/res/"
+#     maxSize=4 #Maximal number of files in a subfolder
+#     subfolderCount=0 #Number of subfolders
+#     folderName = Vector{String}()
+#     for file in readdir(resultFolder) #For each file in the result folder
+#         path = resultFolder * file
+#         if isdir(path) #If it is a subfolder
+#             folderName = vcat(folderName, file)
+#             subfolderCount += 1
+#             folderSize = size(readdir(path), 1)
+#             if maxSize < folderSize
+#                 maxSize = folderSize
+#             end
+#         end
+#     end
+#     #Array that will contain the resolution times (one line for each subfolder)
+#     results = Array{Float64,2}(undef, 1, subfolderCount*maxSize)
+#     for i in 1:subfolderCount
+#         for j in 1:maxSize
+#             results[1, (i-1)*maxSize+j] = Inf
+#         end
+#     end
+#     folderCount = 0
+#     maxSolveTime = 0
+#     #For each subfolder
+#     for file in readdir(resultFolder)
+#         path = resultFolder * file
+#         if isdir(path)
+#             folderCount += 1
+#             fileCount = 0
+#             #For each text file in the subfolder
+#             for resultFile in filter(x->occursin(".txt", x), readdir(path))
+#                 fileCount += 1
+#                 readlines(path * "/" * resultFile)
+#                 solveTime=readlines(path * "/" * resultFile)[1][13:18]
+#                 #solveTime=replace(solveTime, "." => ",")
+#                 solveTime = parse(Float64, solveTime)
+#                 isOptimal = readlines(path * "/" * resultFile)[2][13:16]
+#                 results[1, (folderCount-1)*maxSize+fileCount] = solveTime
+#             end
+#         end
+#     end
+#     #Sort each row increasingly
+#     # println("Max solve time: ", maxSolveTime)
+#     # x = Array{Float64, 1}()
+#     # y = Array{Float64, 1}()
+#     # #x coordinate of the previous inflexion point
+#     # previousX = 0
+#     # previousY = 0
+#     # append!(x, previousX)
+#     # append!(y, previousY)
+#     # #Current position in the line
+#     # currentId = 1
+#     # #While the end of the line is not reached 
+#     # while currentId != size(results, 2) && results[1, currentId] != Inf
+#     #     #Number of elements which have the value previousX
+#     #     identicalValues = 1
+#     #     #While the value is the same
+#     #     while results[1, currentId] == previousX && currentId <= size(results, 2)
+#     #         currentId += 1
+#     #         identicalValues += 1
+#     #     end
+#     #     #Add the proper points
+#     #     append!(x, previousX)
+#     #     append!(y, currentId - 1)
+#     #     if results[1, currentId] != Inf
+#     #         append!(x, results[1, currentId])
+#     #         append!(y, currentId - 1)
+#     #     end
+#     #     previousX = results[1, currentId]
+#     #     previousY = currentId - 1
+#     # end
+#     # append!(x, maxSolveTime)
+#     # append!(y, currentId - 1)
+#     # println(size(x))
+#     solver=["test","test","test","test","test"]
+#     x1=[results[1,1],results[1,6],results[1,11],results[1,16]]
+#     x2=[results[1,2],results[1,7],results[1,12],results[1,17]]
+#     x3=[results[1,3],results[1,8],results[1,13],results[1,18]]
+#     x4=[results[1,4],results[1,9],results[1,14],results[1,19]]
+#     x5=[results[1,5],results[1,10],results[1,15],results[1,20]]
+#     df=DataFrame()
+#     df.A = x1
+#     df[:, :B]=x2
+#     df[:, :C]=x3
+#     df[:, :D]=x4
+#     df[:, :E]=x5
+#     #df=DataFrame(x1,x2,x3,x4,x5)
+#     #plot(x,kind="bar", label = folderName[dim], legend = :bottomright, xaxis = "Time (s)", yaxis = "Solved instances",linewidth=3)
+#     plt=plot(bar(df, x=:"test1", y =:"cc"))
+#     # plot(bar(x1[1],label="cross 5"))
+#     # plot(bar(x1[2]),label="cross 7")
+#     # plot(bar(x1[3]),label="europe 5")
+#     # plot(bar(x1[4]),label="europe 7")
+#     # plot(bar(x2[1]),label="cross 5")
+#     # plot(bar(x2[2]),label="cross 7")
+#     # plot(bar(x2[3]),label="europe 5")
+#     # plot(bar(x2[4]),label="europe 7")
+#     # plot(bar(x3[1]),label="cross 5")
+#     # plot(bar(x3[2]),label="cross 7")
+#     # plot(bar(x3[3]),label="europe 5")
+#     # plot(bar(x3[4]),label="europe 7")
+#     # plot(bar(x4[1]),label="cross 5")
+#     # plot(bar(x4[2]),label="cross 7")
+#     # plot(bar(x4[3]),label="europe 5")
+#     # plot(bar(x4[4]),label="europe 7")
+#     # plot(bar(x5[1]),label="cross 5")
+#     # plot(bar(x5[2]),label="cross 7")
+#     # plot(bar(x5[3]),label="europe 5")
+#     # plot(bar(x5[4]),label="europe 7")
+#     #plot(groupedbar(["cross 5","cross 7","europe 5","europe 7"],[x1,x2,x3,x4,x5], group=["cplex","heuristique_agglo","heuristique_agglo_wp","heuristique_random","heuristique_closer_to_center"],title="Temps de résolution", label="Type de solveur", color=:blue))
+#     savefig(plt,outputFile)
+# end
 
 """
 Create a latex file which contains an array with the results of the ../res folder.
@@ -153,6 +180,9 @@ Prerequisites:
 - Each text file correspond to the resolution of one instance
 - Each text file contains a variable "solveTime" and a variable "isOptimal"
 """
+
+###############FONCTION NON IMPLEMENTEE
+
 function resultsArray(outputFile::String)
     resultFolder = cwd*adresse*"/res/"
     dataFolder = cwd*adresse*"/data/"
@@ -270,3 +300,6 @@ function resultsArray(outputFile::String)
     println(fout, "\\end{document}")
     close(fout)
 end 
+
+#performanceDiagram(cwd*adresse*"/res/graphe.png")
+#resultsArray(cwd*adresse*"/LaTeX/array.tex")

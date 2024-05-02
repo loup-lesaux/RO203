@@ -2,7 +2,7 @@
 #include("io.jl")
 
 cwd=pwd()
-adresse="/Projet/RO203/pegs"
+adresse="/Projet/RO203/Pegs"
 
 """
 Generate an n*n grid with a given density
@@ -25,6 +25,21 @@ function generateInstance(n::Int64, type::String)
             end
         end
         grid[div(n+1,2),div(n+1,2)]=0
+    elseif type=="europe" #European grid
+        for i in 1:n
+            for j in 1:n
+                if ((i>=n+1-div(n,3))||(i<=div(n,3)))&&((j>=n+1-div(n,3))||(j<=div(n,3)))
+                    grid[i,j]=2
+                else
+                    grid[i,j]=1
+                end
+            end
+        end
+        grid[n+1-div(n,3),n+1-div(n,3)]=1
+        grid[n+1-div(n,3),div(n,3)]=1
+        grid[div(n,3),n+1-div(n,3)]=1
+        grid[div(n,3),div(n,3)]=1
+        grid[div(n+1,2),div(n+1,2)-1]=0
     else #Wrong grid type
         println("Mauvais type de grille.")
         return -1
@@ -55,7 +70,7 @@ function saveInstance(grid::Array{Int64, 2}, outputFile::String)
             else
                 print(writer, " ,")
             end
-            if j==n
+            if (j==n)&&(i<n)
                 println(writer,"")
             end
         end
@@ -76,8 +91,8 @@ function generateDataSet(types::Array{String, 1})
     # For each grid size considered
     for type in types
         if type=="croix"
-            # Generate 10 instances
-            for size in [5]
+            # Generate 2 instances
+            for size in [5,7]
                 fileName = cwd*adresse*"/data/instance_croix_"*string(size)*".txt"
                 if !isfile(fileName)
                     println("-- Generating file "*fileName)
@@ -88,7 +103,20 @@ function generateDataSet(types::Array{String, 1})
                 end
 		    end
         end
+        if type=="europe"
+            # Generate 2 instances
+            for size in [5,7]
+                fileName = cwd*adresse*"/data/instance_europe_"*string(size)*".txt"
+                if !isfile(fileName)
+                    println("-- Generating file "*fileName)
+                    grid = generateInstance(size,"europe")
+                    if grid!=-1
+                        saveInstance(grid, fileName)
+                    end
+                end
+		    end
+        end
 	end    
 end
 
-generateDataSet(["croix"])
+#generateDataSet(["croix","europe"])

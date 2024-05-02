@@ -532,5 +532,5 @@ function writeSolution(fout::IOStream, xk::Matrix{Int64}, up, down, left, right)
     println(fout)
 end 
 
-#performanceDiagram(cwd*adresse*"/res/graphe.pdf")
+performanceDiagram(cwd*adresse*"/res/graphe.pdf")
 #resultsArray(cwd*adresse*"/LaTeX/array.tex")

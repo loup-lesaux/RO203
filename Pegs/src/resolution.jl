@@ -7,7 +7,7 @@ include("io.jl")
 TOL = 0.00001
 
 cwd=pwd()
-adresse="/Projet/RO203/pegs"
+adresse="/Projet/RO203/Pegs"
 
 """
 Solve an instance with CPLEX
@@ -783,7 +783,7 @@ function solveDataSet()
     end 
 end
 
-solveDataSet()
+#solveDataSet()
 
 ####################      Test unitaires des fonctions      ###################
 
@@ -854,16 +854,19 @@ G = create_basic_board()
 #print_list_elements(List_of_possible_move(G))
 
 # Test heuristicsolve
-
-#H, u=heuristicSolve(G)
-#A, u=heuristicSolve_wp(G)
-#M, u=heuristicSolve_random(G)
-#B, u=heuristicSolve_distance_max(G)
-#C, u=heuristicSolve_distance_min(G)
-#D, u=heuristicSolve_closer_to_center(G)
+rille=readInputFile(cwd*adresse*"/data/instance_europe_5.txt")
+H=heuristicSolve(rille)
+A=heuristicSolve_wp(rille)
+M=heuristicSolve_random(rille)
+B=heuristicSolve_distance_max(rille)
+C=heuristicSolve_distance_min(rille)
+D=heuristicSolve_closer_to_center(rille)
 
 # println("résolution heuristique sans pénalisation des trous :")
-# print_basic_board(H)
+print_basic_board(H)
+print_basic_board(A)
+print_basic_board(M)
+print_basic_board(D)
 
 # println("résolution heuristique avec pénalisation des trous :")
 # print_basic_board(A)
